@@ -1,0 +1,25 @@
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+cmake_*
+nbproject/
+build/
+_backup
+_staging
+_build
+_install
+
+# IntelliJ project files
+**/.idea/*
+*.iml
+
+.DS_Store
+
+# Share code style settings with others
+!**/.idea/codeStyleSettings.xml
+
+# Share file templates with others
+!**/.idea/fileTemplates/

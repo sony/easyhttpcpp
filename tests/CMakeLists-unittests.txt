@@ -1,0 +1,35 @@
+set(TESTTYPE "Unit")
+
+set(TESTRUNNER "${LIBRARY_TARGET_NAME}-${TESTTYPE}TestRunner")
+
+set(TESTDATA_ROOTDIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Data/Test/${LIBRARY_TARGET_NAME}/${TESTTYPE}")
+
+# sources
+file(GLOB_RECURSE TEST_SRCS "unittests/*.cpp")
+
+add_executable(${TESTRUNNER} ${TEST_SRCS})
+
+# allow tests to know their runtime data root location
+target_compile_definitions(${TESTRUNNER} PRIVATE
+                           RUNTIME_DATA_ROOT=${TESTDATA_ROOTDIR}
+                           )
+
+target_link_libraries(${TESTRUNNER}
+                      easyhttp-testutil
+                      easyhttp
+                      GMock::main
+                      Poco::Foundation
+                      Poco::Data Poco::DataSQLite
+                      Poco::Net Poco::NetSSL Poco::Crypto
+                      OpenSSL::SSL OpenSSL::Crypto)
+
+# add private headers to include search path as well
+target_include_directories(${TESTRUNNER}
+                           PRIVATE
+                           ${PROJECT_SOURCE_DIR}/src
+                           ${CMAKE_CURRENT_SOURCE_DIR}/unittests
+                           )
+
+# test is run in the runtime directory. So the test data is copied there too
+add_custom_command(TARGET ${TESTRUNNER} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/Data ${TESTDATA_ROOTDIR})

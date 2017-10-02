@@ -1,0 +1,48 @@
+EasyHttp
+============
+A cross-platform HTTP client library with a focus on usability and speed.
+Under its hood, EasyHttp uses [POCO C++ Libraries](https://github.com/pocoproject/poco) and derives many of its 
+design inspirations from [okHttp](https://github.com/square/okhttp), a well known HTTP client for Android and Java 
+applications. Please check out [Wiki](https://github.com/sony/easyhttpcpp/wiki) for details.
+
+Why another HTTP client?
+--------------------------
+Modern network applications need a powerful HTTP client. While we already have many well known C++ HTTP clients like, 
+[Poco::Net](https://pocoproject.org/docs/Poco.Net.html), 
+[Boost.Asio](http://www.boost.org/doc/libs/1_65_1/doc/html/boost_asio.html), 
+[cpprestsdk](https://github.com/Microsoft/cpprestsdk) to name a few, they often lack features like a powerful 
+response cache, HTTP connection pooling, debuggability etc which we all take it for granted for libraries targeted 
+towards Android or iOS platforms. EasyHttp tries to fill that gap. 
+
+Features
+----------------
+- Powerful and easy to use HTTP client with synchronous and _asynchronous (coming soon)_ apis.
+- HTTP connection pooling support to reduce latency.
+- 2 level, _memory (coming soon)_ and file HTTP response caching to optimize repeat requests.
+- Hackable HTTP request/response with a concept of [okHttp](https://github.com/square/okhttp) style 
+[Interceptors](https://github.com/sony/easyhttpcpp/wiki/Recipe:-Interceptors).
+- Cross-platform and highly portable to [many platforms](https://github.com/sony/easyhttpcpp/wiki/Supported-platforms).
+- Automatic recovery during faulty network connections.
+- Secure by default. Obsolete protocols like SSLv2, SSLv3 are disabled by default.
+- Comprehensibly tested and is used internally in various Sony projects.
+
+Getting Started
+-----------------
+#### Installation
+See [Installing EasyHttp](https://github.com/sony/easyhttpcpp/wiki/Installing-EasyHttp).
+
+#### Samples
+See [samples](https://github.com/sony/easyhttpcpp/tree/master/samples).
+Also checkout common [use-cases](https://github.com/sony/easyhttpcpp/wiki/Recipes).
+
+#### Api doc
+See [wiki](https://github.com/sony/easyhttpcpp/wiki/Build-options#building-docs) for building api doc.
+
+#### Library build options
+See [Build options](https://github.com/sony/easyhttpcpp/wiki/Build-options).
+
+License
+---------
+This library is distributed under [The MIT license](https://opensource.org/licenses/MIT). 
+See [LICENSE](https://github.com/sony/easyhttpcpp/blob/master/LICENSE) and
+[NOTICE](https://github.com/sony/easyhttpcpp/blob/master/NOTICE) for more information.

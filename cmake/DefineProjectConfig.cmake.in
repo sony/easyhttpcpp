@@ -1,0 +1,49 @@
+if (CMAKE_VERSION VERSION_LESS 3.0)
+    message(FATAL_ERROR "@CMAKE_PROJECT_NAME@ requires at least CMake version 3.0")
+endif ()
+
+set(_@CMAKE_PROJECT_NAME@_FIND_PARTS_REQUIRED)
+if (@CMAKE_PROJECT_NAME@_FIND_REQUIRED)
+    set(_@CMAKE_PROJECT_NAME@_FIND_PARTS_REQUIRED REQUIRED)
+endif ()
+set(_@CMAKE_PROJECT_NAME@_FIND_PARTS_QUIET)
+if (@CMAKE_PROJECT_NAME@_FIND_QUIETLY)
+    set(_@CMAKE_PROJECT_NAME@_FIND_PARTS_QUIET QUIET)
+endif ()
+
+get_filename_component(_@CMAKE_PROJECT_NAME@_install_prefix "${CMAKE_CURRENT_LIST_DIR}" ABSOLUTE)
+
+set(_@CMAKE_PROJECT_NAME@_NOTFOUND_MESSAGE)
+
+set(_@CMAKE_PROJECT_NAME@_CMAKE_PREFIX_PATH_old ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH ${_@CMAKE_PROJECT_NAME@_install_prefix})
+
+set(module @LIBRARY_TARGET_NAME@)
+find_package(@CMAKE_PROJECT_NAME@${module}
+             ${_@CMAKE_PROJECT_NAME@_FIND_PARTS_QUIET}
+             ${_@CMAKE_PROJECT_NAME@_FIND_PARTS_REQUIRED}
+             PATHS "${_@CMAKE_PROJECT_NAME@_install_prefix}" NO_DEFAULT_PATH
+             )
+if (NOT @CMAKE_PROJECT_NAME@${module}_FOUND)
+    if (@CMAKE_PROJECT_NAME@_FIND_REQUIRED_${module})
+        set(_@CMAKE_PROJECT_NAME@_NOTFOUND_MESSAGE
+            "${_@CMAKE_PROJECT_NAME@_NOTFOUND_MESSAGE}Failed to find @CMAKE_PROJECT_NAME@ component \"${module}\" config file at \"${_@CMAKE_PROJECT_NAME@_install_prefix}/@CMAKE_PROJECT_NAME@${module}/@CMAKE_PROJECT_NAME@${module}Config.cmake\"\n")
+    elseif (NOT @CMAKE_PROJECT_NAME@_FIND_QUIETLY)
+        message(WARNING "Failed to find @CMAKE_PROJECT_NAME@ component \"${module}\" config file at \"${_@CMAKE_PROJECT_NAME@_install_prefix}/@CMAKE_PROJECT_NAME@${module}/@CMAKE_PROJECT_NAME@${module}Config.cmake\"")
+    endif ()
+endif ()
+
+# For backward compatibility set the LIBRARIES variable
+list(APPEND @CMAKE_PROJECT_NAME@_LIBRARIES "@CMAKE_PROJECT_NAME@::${module}")
+
+# For backward compatibility set the INCLUDE_DIR(s) variables
+list(APPEND @CMAKE_PROJECT_NAME@_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+list(APPEND @CMAKE_PROJECT_NAME@_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
+
+# Restore the original CMAKE_PREFIX_PATH value
+set(CMAKE_PREFIX_PATH ${_@CMAKE_PROJECT_NAME@_CMAKE_PREFIX_PATH_old})
+
+if (_@CMAKE_PROJECT_NAME@_NOTFOUND_MESSAGE)
+    set(@CMAKE_PROJECT_NAME@_NOT_FOUND_MESSAGE "${_@CMAKE_PROJECT_NAME@_NOTFOUND_MESSAGE}")
+    set(@CMAKE_PROJECT_NAME@_FOUND False)
+endif ()
