@@ -1,0 +1,11 @@
+inspecode:
+  thresholds:
+    num-issues:
+      critical: 0
+      error: 0
+  cppcheck:
+    ignore: 
+      - "tests*"
+    options:
+      --enable: all
+      -I: include

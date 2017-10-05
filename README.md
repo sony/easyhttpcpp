@@ -1,5 +1,8 @@
 EasyHttp
 ============
+
+[![Job Status](https://inspecode.rocro.com/badges/github.com/sony/easyhttpcpp/status?token=ylDg4TQtxeggrtYDr-GP3NMzKW3J0EUw6bLJdTyNVso)](https://inspecode.rocro.com/jobs/github.com/sony/easyhttpcpp/latest?completed=true)
+
 A cross-platform HTTP client library with a focus on usability and speed.
 Under its hood, EasyHttp uses [POCO C++ Libraries](https://github.com/pocoproject/poco) and derives many of its 
 design inspirations from [okHttp](https://github.com/square/okhttp), a well known HTTP client for Android and Java 
