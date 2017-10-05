@@ -2,6 +2,7 @@ EasyHttp
 ============
 
 [![Job Status](https://inspecode.rocro.com/badges/github.com/sony/easyhttpcpp/status?token=ylDg4TQtxeggrtYDr-GP3NMzKW3J0EUw6bLJdTyNVso)](https://inspecode.rocro.com/jobs/github.com/sony/easyhttpcpp/latest?completed=true)
+[![Build Status](https://travis-ci.org/sony/easyhttpcpp.svg?branch=master)](https://travis-ci.org/sony/easyhttpcpp)
 
 A cross-platform HTTP client library with a focus on usability and speed.
 Under its hood, EasyHttp uses [POCO C++ Libraries](https://github.com/pocoproject/poco) and derives many of its 

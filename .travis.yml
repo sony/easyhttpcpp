@@ -1,0 +1,33 @@
+# This file can be validated on:
+# http://lint.travis-ci.org/
+
+os:
+  - linux
+  - osx
+language: cpp
+cache: ccache
+before_cache:
+  # print statistics before uploading new cache
+  - ccache --show-stats
+compiler:
+  - gcc
+  - clang
+sudo: false
+# install latest CMake (default of trusty is too outdated)
+before_install:
+  - if [ $TRAVIS_OS_NAME = linux ]; then mkdir $HOME/usr; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then export PATH="$HOME/usr/bin:$PATH"; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then wget https://cmake.org/files/v3.7/cmake-3.7.2-Linux-x86_64.sh; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then chmod +x cmake-3.7.2-Linux-x86_64.sh; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then ./cmake-3.7.2-Linux-x86_64.sh --prefix=$HOME/usr --exclude-subdir --skip-license; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then cmake --version; fi
+install:
+  # ccache on OS X needs installation first
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install ccache; export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
+  # reset ccache statistics
+  - ccache --zero-stats
+script:
+- set -e
+- ./scripts/01_install_dependencies.sh
+- ./scripts/02_run_alltests.sh
+- ./scripts/03_run_samples.sh
