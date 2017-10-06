@@ -20,13 +20,13 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQU
 make >/dev/null
 
 # run all samples
-./bin/easyhttpcpp-samples-SimpleHttpClient https://github.com/sony/easyhttpcpp
+./bin/easyhttpcpp-samples-SimpleHttpClient https://github.com/sony/easyhttpcpp >/dev/null 2>&1
 
 # build all samples with Release lib
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_PREFIX_PATH=${CWD}/_install ${CMAKE_TOOLCHAIN_FILE_ARG} ../
 make >/dev/null
 
 # run all samples
-./bin/easyhttpcpp-samples-SimpleHttpClient https://github.com/sony/easyhttpcpp
+./bin/easyhttpcpp-samples-SimpleHttpClient https://github.com/sony/easyhttpcpp >/dev/null 2>&1
 
 cd ${CWD}
