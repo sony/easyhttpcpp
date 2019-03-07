@@ -1,5 +1,26 @@
 # Change Log
 
+## [2.0.0](https://github.com/sony/easyhttpcpp/releases/tag/2.0.0) (March 07, 2019)
+#### Added
+Features added:
+- Windows support
+- Async APIs and corresponding sample project, AsyncHttpClient
+- `executorservice/QueuedThreadPool` for thread pooling (used by Async APIs)
+- RequestBody::create(MediaType::Ptr, Poco::SharedPtr<std::string>)
+- RequestBody::create(MediaType::Ptr, Poco::SharedPtr<std::istream>)
+#### Changed
+- `common/CoreLogger::getInstance()` now returns pointer instead of reference
+#### Deprecated
+- `RequestBody::create(MediaType::Ptr, std::istream&)`
+  - Use `RequestBody::create(MediaType::Ptr, Poco::SharedPtr<std::istream>)` instead.
+- `RequestBody::create(MediaType::Ptr, const std::string&)`
+  - Use `RequestBody::create(MediaType::Ptr, Poco::SharedPtr<std::string>)` instead.
+#### Removed
+N/A
+#### Fixed
+- https://github.com/sony/easyhttpcpp/issues/1
+- https://github.com/sony/easyhttpcpp/issues/2
+
 ## [1.0.0](https://github.com/sony/easyhttpcpp/releases/tag/1.0.0) (October 05, 2017)
 #### Added
 Initial release. Features added:
