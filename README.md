@@ -20,9 +20,9 @@ towards Android or iOS platforms. EasyHttp tries to fill that gap.
 
 Features
 ----------------
-- Powerful and easy to use HTTP client with synchronous and _asynchronous (coming soon)_ apis.
+- Powerful and easy to use HTTP client with synchronous and asynchronous apis.
 - HTTP connection pooling support to reduce latency.
-- 2 level, _memory (coming soon)_ and file HTTP response caching to optimize repeat requests.
+- HTTP response caching to optimize repeat requests.
 - Hackable HTTP request/response with a concept of [okHttp](https://github.com/square/okhttp) style 
 [Interceptors](https://github.com/sony/easyhttpcpp/wiki/Recipe:-Interceptors).
 - Cross-platform and highly portable to [many platforms](https://github.com/sony/easyhttpcpp/wiki/Supported-platforms).
