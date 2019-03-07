@@ -56,6 +56,14 @@ void BaseLogger::log(const std::string& tag, LogLevel level, unsigned int line, 
     }
 }
 
+void BaseLogger::safeLog(BaseLogger* pLogger, const std::string& tag, LogLevel level, unsigned int line,
+        const std::string& message)
+{
+    if (pLogger) {
+        pLogger->log(tag, level, line, message);
+    }
+}
+
 void BaseLogger::resetToDefaults()
 {
     m_level = DefaultLogLevel;

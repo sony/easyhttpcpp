@@ -28,7 +28,8 @@ TEST(RequestUnitTest, constructor_CopiesPropertiesFromBuilder_WhenBuilderIsPasse
     // Given: set parameters to builder
     // Body
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     // Headers
     Headers::Ptr pHeaders = new Headers();
     pHeaders->add(HeaderName, HeaderValueFoo);
@@ -75,7 +76,8 @@ TEST(RequestUnitTest, copyConstructor_CopiesAllProperties)
     // Given: build request
     // Body
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     // Headers
     Headers::Ptr pHeaders = new Headers();
     pHeaders->add(HeaderName, HeaderValueFoo);
@@ -144,7 +146,8 @@ TEST(RequestBuilderUnitTest, constructor_CopiesPropertiesFromRequest_WhenRequest
     // Given: build request
     // Body
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     // Headers
     Headers::Ptr pHeaders = new Headers();
     pHeaders->add(HeaderName, HeaderValueFoo);
@@ -215,7 +218,8 @@ TEST(RequestBuilderUnitTest, httpDeleteWithBody_SetsMethodAndStoresBody)
 
     // When: call httpDelete()
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     builder.httpDelete(pBody);
 
     // Then: HTTP method is DELETE, header is empty, body is set
@@ -331,7 +335,8 @@ TEST(RequestBuilderUnitTest, httpPatchWithBody_SetsMethodAndStoresBody)
 
     // When: call httpPatch()
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     builder.httpPatch(pBody);
 
     // Then: HTTP method is PATCH, header is empty, body is set
@@ -369,7 +374,8 @@ TEST(RequestBuilderUnitTest, httpPostWithBody_SetsMethodAndStoresBody)
 
     // When: call httpPost()
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     builder.httpPost(pBody);
 
     // Then: HTTP method is POST, header is empty, body is set
@@ -431,7 +437,8 @@ TEST(RequestBuilderUnitTest, httpPost_SetsMethodAndRemovedBody_WhenBodyWasSet)
     // Given: body is set
     Request::Builder builder;
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     builder.httpPost(pBody);
 
     // When: call httpPost()
@@ -462,7 +469,8 @@ TEST(RequestBuilderUnitTest, httpPutWithBody_SetsMethod)
 
     // When: call httpPut()
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    RequestBody::Ptr pBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pBody = RequestBody::create(pMediaType, pContent);
     builder.httpPut(pBody);
 
     // Then: HTTP method is PUT, header is empty, body is set

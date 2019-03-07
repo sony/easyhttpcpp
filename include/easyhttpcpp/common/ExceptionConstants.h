@@ -30,6 +30,7 @@ public:
         static const unsigned int Common;
         static const unsigned int Db;
         static const unsigned int MessageDigest;
+	static const unsigned int ExecutorService;
         static const unsigned int Http;
     };
 

@@ -85,13 +85,13 @@ std::string HttpTestUtil::createCachedResponsedBodyFilePath(const std::string& c
     return HttpUtil::makeCachedResponseBodyFilename(cacheRootDir, key);
 }
 
-std::string HttpTestUtil::makeUrl(const std::string& scheme, const std::string& host, unsigned int port,
+std::string HttpTestUtil::makeUrl(const std::string& scheme, const std::string& host, unsigned short port,
             const std::string& path)
 {
     return makeUrl(scheme, host, port, path, "");
 }
 
-std::string HttpTestUtil::makeUrl(const std::string& scheme, const std::string& host, unsigned int port,
+std::string HttpTestUtil::makeUrl(const std::string& scheme, const std::string& host, unsigned short port,
             const std::string& path, const std::string& query)
 {
     Poco::URI uri;

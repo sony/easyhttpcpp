@@ -8,15 +8,15 @@
 #include "easyhttpcpp/HttpException.h"
 
 #include "RequestBodyForString.h"
+#include "RequestBodyUtil.h"
 
 namespace easyhttpcpp {
 
 static const std::string Tag = "RequestBodyForString";
 
-RequestBodyForString::RequestBodyForString(MediaType::Ptr pMediaType, const std::string& content)
+RequestBodyForString::RequestBodyForString(MediaType::Ptr pMediaType, const std::string& content) :
+        RequestBody(pMediaType), m_pContent(&content)
 {
-    setMediaType(pMediaType);
-    m_pContent = &content;
 }
 
 RequestBodyForString::~RequestBodyForString()
@@ -25,18 +25,7 @@ RequestBodyForString::~RequestBodyForString()
 
 void RequestBodyForString::writeTo(std::ostream& outStream)
 {
-    try {
-        outStream << *m_pContent;
-        outStream.flush();
-    } catch (const Poco::Exception& e) {
-        std::string message = "can not send request body.";
-        EASYHTTPCPP_LOG_D(Tag, "Poco::Exception %s [%s]", message.c_str(), e.message().c_str());
-        throw HttpExecutionException(message, e);
-    } catch (const std::exception& e) {
-        std::string message = "can not send request body.";
-        EASYHTTPCPP_LOG_D(Tag, "std::exception %s [%s]", message.c_str(), e.what());
-        throw HttpExecutionException(message, e);
-    }
+    RequestBodyUtil::write(*m_pContent, outStream);
 }
 
 bool RequestBodyForString::hasContentLength() const

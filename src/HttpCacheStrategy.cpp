@@ -365,10 +365,11 @@ bool HttpCacheStrategy::isCacheable(Response::Ptr pResponse)
 
     // check request
     CacheControl::Ptr pRequestCacheControl = pRequest->getCacheControl();
-    if (pRequestCacheControl && pRequestCacheControl->isNoCache()) {
-        EASYHTTPCPP_LOG_D(Tag, "isCacheable: Not Cached. request Cache-Control contains no-cache.");
+    if (pRequestCacheControl && pRequestCacheControl->isNoStore()) {
+        EASYHTTPCPP_LOG_D(Tag, "isCacheable: Not Cached. request Cache-Control contains no-store.");
         return false;
     }
+
     if (pRequest->hasHeader(HttpConstants::HeaderNames::Authorization)) {
         EASYHTTPCPP_LOG_D(Tag, "isCacheable: Not Cached. exist Authorization Header.");
         return false;

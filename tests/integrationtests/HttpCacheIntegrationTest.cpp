@@ -35,6 +35,7 @@
 #include "MockInterceptor.h"
 #include "EasyHttpCppAssertions.h"
 #include "TestFileUtil.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpCacheInternal.h"
@@ -60,7 +61,11 @@ static const char* const LruQuery2 = "test=2";
 static const char* const LruQuery3 = "test=3";
 static const char* const LruQuery4 = "test=4";
 static const size_t ResponseBufferBytes = 8192;
-static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/cache";
+#ifndef _WIN32
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/unix/cache";
+#else
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/windows/cache";
+#endif
 static const char* const TempDummyFileName = "dummy";
 
 class HttpCacheIntegrationTest : public HttpIntegrationTestCase {
@@ -70,6 +75,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -362,13 +369,8 @@ TEST_F(HttpCacheIntegrationTest, evictAll_ThrowsHttpExecutionException_WhenFaile
             EASYHTTPCPP_FILE_PERMISSION_ALLUSER_READ_ONLY);
 
     // When: call evictAll
-    // Then: HttpExecutionException (cause あり) が throw される。
-    try {
-        pCache->evictAll();
-        ADD_FAILURE() << "HttpCache::evictAll did not throw exception.";
-    } catch (const HttpExecutionException& expected) {
-        EXPECT_FALSE(expected.getCause().cast<PocoException>().isNull());
-    }
+    // Then: HttpExecutionException (cause なし) が throw される。
+    EASYHTTPCPP_EXPECT_THROW(pCache->evictAll(), HttpExecutionException, 100702);
 
     TestFileUtil::changeAccessPermission(HttpTestUtil::getDefaultCacheTempDir(),
             EASYHTTPCPP_FILE_PERMISSION_FULL_ACCESS);

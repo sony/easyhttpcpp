@@ -22,7 +22,7 @@ HttpTestServer::~HttpTestServer()
 {
 }
 
-Poco::Net::ServerSocket* HttpTestServer::newSocket(unsigned int port)
+Poco::Net::ServerSocket* HttpTestServer::newSocket(unsigned short port)
 {
     return new Poco::Net::ServerSocket(port);
 }

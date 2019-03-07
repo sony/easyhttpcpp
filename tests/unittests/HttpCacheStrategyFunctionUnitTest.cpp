@@ -88,7 +88,8 @@ TEST(HttpCacheStrategyFunctionUnitTest, isAvailableToCache_ReturnsFalse_WhenPutM
 {
     // Given: PUT Method
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     Request::Ptr pRequest = requestBuilder.httpPut(pRequestBody).build();
 
@@ -310,7 +311,8 @@ TEST(HttpCacheStrategyFunctionUnitTest, isCacheable_ReturnsFalse_WhenPutMethod)
 {
     // Given: PUT Method
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     Request::Ptr pRequest = requestBuilder.httpPut(pRequestBody).build();
     Response::Builder responseBuilder;
@@ -338,7 +340,8 @@ TEST(HttpCacheStrategyFunctionUnitTest, isCacheable_ReturnsFalse_WhenPatchMethod
 {
     // Given: PATCH Method
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     Request::Ptr pRequest = requestBuilder.httpPatch(pRequestBody).build();
     Response::Builder responseBuilder;
@@ -373,6 +376,7 @@ public:
     bool hasResponsePrivate;
     bool hasResponseNoStore;
     bool hasRequestNoCache;
+    bool hasRequestNoStore;
     bool hasAuthorization;
     bool hasTransferEncoding;
     const char* pTransferEncodingValue;
@@ -390,6 +394,7 @@ public:
                 "hasResponsePrivate     : " + StringUtil::boolToString(hasResponsePrivate) + "\n" +
                 "hasResponseNoStore     : " + StringUtil::boolToString(hasResponseNoStore) + "\n" +
                 "hasRequestNoCache      : " + StringUtil::boolToString(hasRequestNoCache) + "\n" +
+                "hasRequestNoStore      : " + StringUtil::boolToString(hasRequestNoStore) + "\n" +
                 "hasAuthorization       : " + StringUtil::boolToString(hasAuthorization) + "\n" +
                 "hasTransferEncoding    : " + StringUtil::boolToString(hasTransferEncoding) + "\n" +
                 "pTransferEncodingValue : " + (pTransferEncodingValue == NULL ? "" : pTransferEncodingValue) + "\n" +
@@ -408,6 +413,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -423,6 +429,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -438,6 +445,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -453,6 +461,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -468,6 +477,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -483,6 +493,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -498,6 +509,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -513,6 +525,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -528,6 +541,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -543,6 +557,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -558,6 +573,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -573,6 +589,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -588,6 +605,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -603,6 +621,7 @@ static const IsCacheableParam IsCacheableData[] = {
         true,  // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -618,6 +637,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -633,6 +653,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -648,6 +669,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -663,6 +685,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -678,6 +701,7 @@ static const IsCacheableParam IsCacheableData[] = {
         true,  // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -693,6 +717,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -708,10 +733,11 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         true,  // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
-        false  // retValue;
+        true   // retValue;
     },
     {   // (21) GET Method, statusCode==200, Content-Length あり, Authorization あり
         Poco::Net::HTTPResponse::HTTP_OK,  // statusCode;
@@ -723,6 +749,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         true,  // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -738,6 +765,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         true,  // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -753,6 +781,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         true,  // hasTransferEncoding;
         "chunked",  // pTransferEncodingValue;
@@ -768,6 +797,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
@@ -783,6 +813,7 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
         false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         true,  // hasTransferEncoding;
         "",    // pTransferEncodingValue;
@@ -797,11 +828,28 @@ static const IsCacheableParam IsCacheableData[] = {
         false, // hasResponsePublic;
         false, // hasResponsePrivate;
         false, // hasResponseNoStore;
-        false, // hasResponseNoStore;
+        false, // hasRequestNoCache;
+        false, // hasRequestNoStore;
         false, // hasAuthorization;
         false, // hasTransferEncoding;
         NULL,  // pTransferEncodingValue;
         false  // retValue;
+    },
+    {   // (27) GET Method, statusCode==200, Content-Length あり, Request の Cache-Control に no-store あり
+        Poco::Net::HTTPResponse::HTTP_OK,  // statusCode;
+        true, // hasContentLength;
+        50,    // contentLength;
+        false, // hasExpires;
+        false, // hasResponseMaxAge;
+        false, // hasResponsePublic;
+        false, // hasResponsePrivate;
+        false, // hasResponseNoStore;
+        false, // hasRequestNoCache;
+        true,  // hasRequestNoStore;
+        false, // hasAuthorization;
+        false, // hasTransferEncoding;
+        NULL,  // pTransferEncodingValue;
+        false   // retValue;
     },
 };
 class IsCacheableTest : public HttpCacheStrategyFunctionUnitTest ,
@@ -817,9 +865,15 @@ TEST_P(IsCacheableTest, isCacheable_ReturnsIsCacheableResult_WhenCombinationBySt
 
     // Given:
     Request::Builder requestBuilder;
-    if (param.hasRequestNoCache) {
+    if (param.hasRequestNoCache || param.hasRequestNoStore) {
         CacheControl::Builder requestCacheControlBuilder;
-        requestBuilder.setCacheControl(requestCacheControlBuilder.setNoCache(true).build());
+        if (param.hasRequestNoCache) {
+            requestCacheControlBuilder.setNoCache(true);
+        }
+        if (param.hasRequestNoStore) {
+            requestCacheControlBuilder.setNoStore(true);
+        }
+        requestBuilder.setCacheControl(requestCacheControlBuilder.build());
     }
     if (param.hasAuthorization) {
         requestBuilder.setHeader(HeaderAuthorization, AuthorizationValue);
@@ -922,7 +976,8 @@ TEST(HttpCacheStrategyFunctionUnitTest, isInvalidCacheMethod_ReturnsTrue_WhenPat
 {
     // Given: set PATCH method and statusCode = HTTP_OK
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     Request::Ptr pRequest = requestBuilder.httpPatch(pRequestBody).build();
     Response::Builder responseBuilder;
@@ -937,7 +992,8 @@ TEST(HttpCacheStrategyFunctionUnitTest, isInvalidCacheMethod_ReturnsTrue_WhenPut
 {
     // Given: set PUT method and statusCode = HTTP_OK
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     Request::Ptr pRequest = requestBuilder.httpPut(pRequestBody).build();
     Response::Builder responseBuilder;

@@ -7,11 +7,11 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Net/HTTPResponse.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/EasyHttp.h"
 #include "easyhttpcpp/Interceptor.h"
 #include "HeaderContainMatcher.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 
 #include "CallInternal.h"
 #include "ConnectionConfirmationInterceptor.h"
@@ -99,7 +99,7 @@ TEST_F(ConnectionPoolInternalIntegrationTest,
     
     // Then: release immediately. (think margin is 500 ms)
     unsigned long long releaseMicroSec = static_cast<unsigned long long>(start.elapsed());
-    EASYHTTPCPP_LOG_D(Tag, "ConnectoinPool release time = %zu us", releaseMicroSec);
+    EASYHTTPCPP_TESTLOG_I(Tag, "ConnectoinPool release time = %zu us", releaseMicroSec);
     EXPECT_GT(static_cast<unsigned long long>(500*1000), releaseMicroSec);
 }
 
@@ -171,7 +171,7 @@ TEST_F(ConnectionPoolInternalIntegrationTest,
     
     // Then: release immediately. (think margin is 500 ms)
     unsigned long long releaseMicroSec = static_cast<unsigned long long>(start.elapsed());
-    EASYHTTPCPP_LOG_D(Tag, "ConnectoinPool release time = %zu us", releaseMicroSec);
+    EASYHTTPCPP_TESTLOG_I(Tag, "ConnectoinPool release time = %zu us", releaseMicroSec);
     EXPECT_GT(static_cast<unsigned long long>(500*1000), releaseMicroSec);
 }
 

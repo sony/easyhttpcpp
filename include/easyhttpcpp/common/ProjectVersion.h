@@ -7,10 +7,12 @@
 
 #include <string>
 
+#include "easyhttpcpp/common/CommonExports.h"
+
 namespace easyhttpcpp {
 namespace common {
 
-class ProjectVersion {
+class EASYHTTPCPP_COMMON_API ProjectVersion {
 public:
     static std::string getMajor();
     static std::string getMinor();

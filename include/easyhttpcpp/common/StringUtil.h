@@ -7,10 +7,12 @@
 
 #include <string>
 
+#include "easyhttpcpp/common/CommonExports.h"
+
 namespace easyhttpcpp {
 namespace common {
 
-class StringUtil {
+class EASYHTTPCPP_COMMON_API StringUtil {
 public:
     /**
      * @brief format is string formatter.
@@ -33,7 +35,7 @@ public:
      * 
      * @param pFormat
      * @param ...
-     * @return the formated string.
+     * @return the formatted string.
      */
     static std::string format(const char* pFormat, ...);
     static const char* boolToString(bool boolean);
@@ -42,8 +44,8 @@ public:
 
     static bool isNullOrEmpty(const std::string* str);
 
-    static std::string formatVersion(const std::string& major, const std::string& minor, const std::string& patch,
-            const std::string& extension);
+    static std::string formatVersion(const std::string& major, const std::string& minor,
+            const std::string& patch, const std::string& extension);
 
 private:
     StringUtil();

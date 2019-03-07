@@ -13,6 +13,7 @@
 
 #include "easyhttpcpp/CacheControl.h"
 #include "easyhttpcpp/Headers.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
@@ -20,7 +21,7 @@ namespace easyhttpcpp {
 /**
  * @brief A Request preserve Http request parameters.
  */
-class Request : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API Request : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<Request> Ptr;
 
@@ -114,7 +115,7 @@ public:
     /**
      * @brief A Request::Builder is Builder for Request.
      */
-    class Builder {
+    class EASYHTTPCPP_HTTP_API Builder {
     public:
         /**
          * 

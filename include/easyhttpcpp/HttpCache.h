@@ -12,9 +12,11 @@
 #include "Poco/RefCountedObject.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
-class HttpCache : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API HttpCache : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<HttpCache> Ptr;
 
@@ -53,6 +55,7 @@ public:
      * @return 
      */
     virtual size_t getSize() = 0;
+
 };
 
 } /* namespace easyhttpcpp */

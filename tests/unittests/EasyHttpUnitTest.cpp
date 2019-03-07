@@ -257,6 +257,86 @@ TEST(EasyHttpBuilderUnitTest, setConnectionPool_StoresValue)
     EXPECT_EQ(pConnectionPool, pEasyHttp->getConnectionPool());
 }
 
+TEST(EasyHttpBuilderUnitTest, getCorePoolSizeOfAsyncThreadPool_ReturnsCorePoolSizeOfAsyncThreadPool_whenSetItBySetCorePoolSizeOfAsyncThreadPool)
+{
+    // Given: set core pool size
+    EasyHttp::Builder builder;
+    builder.setCorePoolSizeOfAsyncThreadPool(4);
+
+    // When: getCorePoolSizeOfAsyncThreadPool
+    // Then: get core pool size
+    EXPECT_EQ(4, builder.getCorePoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpBuilderUnitTest,
+        getCorePoolSizeOfAsyncThreadPool_ReturnsTwo_whenNotSetItBySetCorePoolSizeOfAsyncThreadPool)
+{
+    // Given: not set core pool size.
+    EasyHttp::Builder builder;
+
+    // When: getCorePoolSizeOfAsyncThreadPool
+    // Then: get default value
+    EXPECT_EQ(2, builder.getCorePoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpBuilderUnitTest, getMaximumPoolSizeOfAsyncThreadPool_ReturnsMaximumPoolSizeOfAsyncThreadPool_whenSetItBySetMaximumPoolSizeOfAsyncThreadPool)
+{
+    // Given: set core pool size by builder.
+    EasyHttp::Builder builder;
+    builder.setMaximumPoolSizeOfAsyncThreadPool(10);
+
+    // When: getMaximumPoolSizeOfAsyncThreadPool
+    // Then: get max pool size
+    EXPECT_EQ(10, builder.getMaximumPoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpBuilderUnitTest,
+        getMaximumPoolSizeOfAsyncThreadPool_ReturnsFive_whenNotSetItBySetMaximumPoolSizeOfAsyncThreadPool)
+{
+    // Given: not set max pool size.
+    EasyHttp::Builder testee;
+
+    // When: getMaximumPoolSizeOfAsyncThreadPool
+    // Then: get default calue
+    EXPECT_EQ(5, testee.getMaximumPoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpBuilderUnitTest, build_ThrowsHttpExecutionException_WhenCorePoolSizeGreaterThanMaximumPooloSize)
+{
+    // Given: set CorePoolSize > MaxPoolSize
+    EasyHttp::Builder builder;
+    builder.setCorePoolSizeOfAsyncThreadPool(11);
+    builder.setMaximumPoolSizeOfAsyncThreadPool(10);
+
+    // When: build
+    // Then: throw HttpExecutionException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(builder.build(), HttpExecutionException, 100702);
+}
+
+TEST(EasyHttpBuilderUnitTest, build_ThrowsHttpExecutionException_WhenCorePoolSizeIsZero)
+{
+    // Given: set CorePoolSize = 0
+    EasyHttp::Builder builder;
+    builder.setCorePoolSizeOfAsyncThreadPool(0);
+
+    // When: build
+    // Then: throw HttpExecutionException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(builder.build(), HttpExecutionException, 100702);
+}
+
+TEST(EasyHttpBuilderUnitTest, build_CreatesEasyHttp_WhenCorePoolSizeLessThanMaximumPooloSize)
+{
+    // Given: set CorePoolSize < MaxPoolSize
+    EasyHttp::Builder builder;
+    builder.setCorePoolSizeOfAsyncThreadPool(10);
+    builder.setMaximumPoolSizeOfAsyncThreadPool(11);
+
+    // When: build
+    // Then: throw HttpExecutionException
+    EasyHttp::Ptr pEasyHttp = builder.build();
+    EXPECT_FALSE(pEasyHttp.isNull());
+}
+
 } /* namespace test */
 } /* namespace easyhttpcpp */
 

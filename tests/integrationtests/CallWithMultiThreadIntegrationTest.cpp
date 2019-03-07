@@ -21,7 +21,6 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/EasyHttp.h"
@@ -32,6 +31,7 @@
 #include "easyhttpcpp/ResponseBody.h"
 #include "easyhttpcpp/ResponseBodyStream.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
@@ -230,7 +230,7 @@ public:
     // test の verify (EXPECT_XXX) で表示するメッセージを設定します。
     void setErrorMessage(const std::string& message)
     {
-        EASYHTTPCPP_LOG_E(Tag, "%s", message.c_str());
+        EASYHTTPCPP_TESTLOG_E(Tag, "%s", message.c_str());
         if (m_message.empty()) {
             m_message = message;
         }
@@ -410,6 +410,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 
     Poco::AutoPtr<SyncRequestHandler> m_pHandlers[MultiThreadCount];

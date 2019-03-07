@@ -12,10 +12,10 @@
 
 #include "easyhttpcpp/common/CacheMetadata.h"
 #include "easyhttpcpp/common/CommonMacros.h"
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/Headers.h"
+#include "TestLogger.h"
 
 #include "HttpIntegrationTestCase.h"
 #include "HttpCacheMetadata.h"
@@ -33,7 +33,11 @@ namespace easyhttpcpp {
 namespace test {
 
 static const std::string Tag = "HttpFileCacheWithMultiThreadIntegrationTest";
-static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/cache";
+#ifndef _WIN32
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/unix/cache";
+#else
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/windows/cache";
+#endif
 static const char* const LruQuery1 = "test=1";
 
 static const Request::HttpMethod Test1HttpMethod = Request::HttpMethodGet;
@@ -241,7 +245,7 @@ bool prepareToCreateCache(HttpFileCache* pHttpFileCache)
         std::string tempFilePath = createResponseTempFile(i);
         CacheMetadata::Ptr pCacheMetadata = createHttpCacheMetadata(key, url, strlen(Test1ResponseBody));
         if (!pHttpFileCache->put(key, pCacheMetadata, tempFilePath)) {
-            EASYHTTPCPP_LOG_D(Tag, "prepareToCreateCache: failed. [%d] url=%s", i, url.c_str());
+            EASYHTTPCPP_TESTLOG_I(Tag, "prepareToCreateCache: failed. [%d] url=%s", i, url.c_str());
             return false;
         }
     }
@@ -257,6 +261,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
     Poco::AutoPtr<MethodExecutionRunner> m_pExecutionRunners[MultiThreadCount];
 };
@@ -784,17 +790,17 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         long long purgeEndMicroSec = static_cast<long long>(purgeEndTime.epochMicroseconds());
         long long methodStartMicroSec = static_cast<long long>(methodStartTime.epochMicroseconds());
         long long methodEndMicroSec = static_cast<long long>(methodEndTime.epochMicroseconds());
-        EASYHTTPCPP_LOG_I(Tag, "sleepMiiliSec=%ld", sleepMilliSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge start=%lld end=%lld elapsed=%lld", purgeStartMicroSec, purgeEndMicroSec,
+        EASYHTTPCPP_TESTLOG_I(Tag, "sleepMiiliSec=%ld", sleepMilliSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge start=%lld end=%lld elapsed=%lld", purgeStartMicroSec, purgeEndMicroSec,
                 purgeEndMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "getMetadata start=%lld end=%lld elapsed=%lld from purge=%lld",
+        EASYHTTPCPP_TESTLOG_I(Tag, "getMetadata start=%lld end=%lld elapsed=%lld from purge=%lld",
                 methodStartMicroSec, methodEndMicroSec, methodEndMicroSec - methodStartMicroSec,
                 methodStartMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge start=%lld", purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "start      =%lld (diff=%lld)", methodStartMicroSec,
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge start=%lld", purgeStartMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "start      =%lld (diff=%lld)", methodStartMicroSec,
                 methodStartMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge end  =%lld (diff=%lld)", purgeEndMicroSec, purgeEndMicroSec - methodStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "end        =%lld (diff=%lld)", methodEndMicroSec, methodEndMicroSec - purgeEndMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge end  =%lld (diff=%lld)", purgeEndMicroSec, purgeEndMicroSec - methodStartMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "end        =%lld (diff=%lld)", methodEndMicroSec, methodEndMicroSec - purgeEndMicroSec);
 
         // method の開始時間が、purge より早い場合は、sleep 時間をふやして retry する。
         if (methodStartMicroSec <= purgeStartMicroSec) {
@@ -876,17 +882,17 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         long long purgeEndMicroSec = static_cast<long long>(purgeEndTime.epochMicroseconds());
         long long methodStartMicroSec = static_cast<long long>(methodStartTime.epochMicroseconds());
         long long methodEndMicroSec = static_cast<long long>(methodEndTime.epochMicroseconds());
-        EASYHTTPCPP_LOG_I(Tag, "sleepMiiliSec=%ld", sleepMilliSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge start=%lld end=%lld elapsed=%lld", purgeStartMicroSec, purgeEndMicroSec,
+        EASYHTTPCPP_TESTLOG_I(Tag, "sleepMiiliSec=%ld", sleepMilliSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge start=%lld end=%lld elapsed=%lld", purgeStartMicroSec, purgeEndMicroSec,
                 purgeEndMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "getMetadata start=%lld end=%lld elapsed=%lld from purge=%lld",
+        EASYHTTPCPP_TESTLOG_I(Tag, "getMetadata start=%lld end=%lld elapsed=%lld from purge=%lld",
                 methodStartMicroSec, methodEndMicroSec, methodEndMicroSec - methodStartMicroSec,
                 methodStartMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge start=%lld", purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "start      =%lld (diff=%lld)", methodStartMicroSec,
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge start=%lld", purgeStartMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "start      =%lld (diff=%lld)", methodStartMicroSec,
                 methodStartMicroSec - purgeStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "purge end  =%lld (diff=%lld)", purgeEndMicroSec, purgeEndMicroSec - methodStartMicroSec);
-        EASYHTTPCPP_LOG_I(Tag, "end        =%lld (diff=%lld)", methodEndMicroSec, methodEndMicroSec - purgeEndMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "purge end  =%lld (diff=%lld)", purgeEndMicroSec, purgeEndMicroSec - methodStartMicroSec);
+        EASYHTTPCPP_TESTLOG_I(Tag, "end        =%lld (diff=%lld)", methodEndMicroSec, methodEndMicroSec - purgeEndMicroSec);
 
         // method の開始時間が、purge より早い場合は、sleep 時間をふやして retry する。
         if (methodStartMicroSec <= purgeStartMicroSec) {

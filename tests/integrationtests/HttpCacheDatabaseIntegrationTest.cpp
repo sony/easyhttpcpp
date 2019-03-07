@@ -17,6 +17,8 @@
 #include "easyhttpcpp/Headers.h"
 #include "HeadersEqualMatcher.h"
 #include "TestDefs.h"
+#include "TestFileUtil.h"
+#include "TestLogger.h"
 #include "TimeInRangeMatcher.h"
 
 #include "HttpIntegrationTestCase.h"
@@ -31,6 +33,7 @@
 using easyhttpcpp::common::CacheMetadata;
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
+using easyhttpcpp::testutil::TestFileUtil;
 
 namespace easyhttpcpp {
 namespace test {
@@ -287,7 +290,10 @@ protected:
     void SetUp()
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
+        TestFileUtil::setFullAccess(path);
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 
     Poco::AutoPtr<DatabaseAccessRunner> m_pExecutes[MultiThreadCount];
@@ -406,7 +412,7 @@ TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsFalse_WhenCannotW
     ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadata));
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
-    file.setReadOnly(true);
+    TestFileUtil::setReadOnly(file.path());
 
     HttpCacheDatabase database(databaseFile);
 
@@ -513,7 +519,7 @@ TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsFalse_WhenCannotW
     ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
-    file.setReadOnly(true);
+    TestFileUtil::setReadOnly(file.path());
 
     HttpCacheDatabase database(databaseFile);
 
@@ -586,7 +592,7 @@ TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsFalse_When
     ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
-    file.setReadOnly(true);
+    TestFileUtil::setReadOnly(file.path());
 
     HttpCacheDatabase database(databaseFile);
 

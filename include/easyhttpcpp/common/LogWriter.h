@@ -7,6 +7,7 @@
 
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
+
 #include "easyhttpcpp/common/LogLevel.h"
 
 namespace easyhttpcpp {

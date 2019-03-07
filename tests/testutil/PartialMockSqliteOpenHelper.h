@@ -17,7 +17,7 @@ namespace easyhttpcpp {
 namespace testutil {
 
 class PartialMockSqliteOpenHelper : public Poco::RefCountedObject,
-public easyhttpcpp::db::SqliteOpenHelper::SqliteOpenHelper {
+public easyhttpcpp::db::SqliteOpenHelper {
 public:
     typedef Poco::AutoPtr<PartialMockSqliteOpenHelper> Ptr;
 

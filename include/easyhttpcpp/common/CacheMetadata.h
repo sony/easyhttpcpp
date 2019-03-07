@@ -10,10 +10,12 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/common/CommonExports.h"
+
 namespace easyhttpcpp {
 namespace common {
 
-class CacheMetadata : public Poco::RefCountedObject {
+class EASYHTTPCPP_COMMON_API CacheMetadata : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<CacheMetadata> Ptr;
 

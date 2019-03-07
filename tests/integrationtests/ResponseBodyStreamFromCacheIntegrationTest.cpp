@@ -26,6 +26,7 @@
 #include "EasyHttpCppAssertions.h"
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
@@ -56,6 +57,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -165,7 +168,7 @@ TEST_F(ResponseBodyStreamFromCacheIntegrationTest, read_ReadsData_WhenRequestLar
     ssize_t retSize = pResponseBodyStream2->read(responseBodyBuffer2.begin(), ResponseBufferBytes);
 
     // Then: read by requestedBytes
-    EXPECT_GE(strlen(HttpTestConstants::DefaultResponseBody), retSize);
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), retSize);
     EXPECT_EQ(0, memcmp(responseBodyBuffer2.begin(), HttpTestConstants::DefaultResponseBody, retSize));
 }
 
@@ -448,14 +451,16 @@ TEST_P(MethodForRemoveBeforeCloseOfGetTest,
         case Request::HttpMethodPut:
         {
             MediaType::Ptr pMediaType = new MediaType(DefaultRequestContentType);
-            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+            Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
             requestBuilder3.httpPut(pRequestBody);
             break;
         }
         case Request::HttpMethodPatch:
         {
             MediaType::Ptr pMediaType = new MediaType(DefaultRequestContentType);
-            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+            Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
             requestBuilder3.httpPatch(pRequestBody);
             break;
         }

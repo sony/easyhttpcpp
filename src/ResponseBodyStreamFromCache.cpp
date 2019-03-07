@@ -36,6 +36,10 @@ void ResponseBodyStreamFromCache::close()
 
     ResponseBodyStreamInternal::close();
 
+    // delete m_pContent and null out, to avoid sharing violation on removing cache file.
+    delete m_pContent;
+    m_pContent = NULL;
+
     HttpCacheInternal* pCacheInternal = static_cast<HttpCacheInternal*> (m_pHttpCache.get());
     Request::Ptr pRequest = m_pResponse->getRequest();
     std::string key = HttpUtil::makeCacheKey(pRequest);

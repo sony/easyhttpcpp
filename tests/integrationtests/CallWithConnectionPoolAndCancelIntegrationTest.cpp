@@ -10,6 +10,7 @@
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 
 #include "CallInternal.h"
 #include "ConnectionInternal.h"
@@ -34,6 +35,8 @@ protected:
     {
         Poco::Path cachePath(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(cachePath);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 

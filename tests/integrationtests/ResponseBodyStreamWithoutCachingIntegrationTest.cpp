@@ -12,7 +12,6 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/Connection.h"
 #include "easyhttpcpp/EasyHttp.h"
@@ -24,6 +23,7 @@
 #include "easyhttpcpp/ResponseBodyStream.h"
 #include "EasyHttpCppAssertions.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 
 #include "HttpIntegrationTestCase.h"
 #include "HttpTestCommonRequestHandler.h"
@@ -33,6 +33,12 @@
 
 using easyhttpcpp::common::StringUtil;
 using easyhttpcpp::testutil::HttpTestServer;
+
+#if defined(_WIN64)
+#define SSIZE_MAX _I64_MAX
+#elif defined(_WIN32)
+#define SSIZE_MAX LONG_MAX
+#endif
 
 namespace easyhttpcpp {
 namespace test {
@@ -164,7 +170,7 @@ TEST_F(ResponseBodyStreamWithoutCachingIntegrationTest, read_ReadsData_WhenReque
     ssize_t retSize = pResponseBodyStream->read(responseBodyBuffer.begin(), ResponseBufferBytes);
 
     // Then: return read size
-    EXPECT_GE(strlen(HttpTestConstants::DefaultResponseBody), retSize);
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), retSize);
     EXPECT_EQ(0, memcmp(responseBodyBuffer.begin(), HttpTestConstants::DefaultResponseBody, retSize));
 }
 
@@ -302,7 +308,7 @@ TEST_F(ResponseBodyStreamWithoutCachingIntegrationTest, read_ReadsData_WhenAfter
     ssize_t retSize = pResponseBodyStream->read(responseBodyBuffer.begin(), ResponseBufferBytes);
 
     // Then: read all data
-    EXPECT_GE(strlen(HttpTestConstants::DefaultResponseBody), retSize);
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), retSize);
     EXPECT_EQ(0, memcmp(responseBodyBuffer.begin(), HttpTestConstants::DefaultResponseBody, retSize));
 }
 
@@ -570,7 +576,7 @@ TEST_F(ResponseBodyStreamWithoutCachingIntegrationTest,
             static_cast<ResponseBodyStreamWithoutCaching*>(pResponseBodyStream.get());
     Connection::Ptr pConnection = pResponseBodyStreamWithoutCaching->getConnection();
     int beforeReferenceCount = pConnection->referenceCount();
-    EASYHTTPCPP_LOG_D(Tag, "pConnection.referenceCount() = %d", beforeReferenceCount);
+    EASYHTTPCPP_TESTLOG_I(Tag, "pConnection.referenceCount() = %d", beforeReferenceCount);
 
     // When: close response body stream with skip response body
     pResponseBodyStream->close();

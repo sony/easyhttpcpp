@@ -8,6 +8,7 @@
 #include "Poco/SingletonHolder.h"
 
 #include "easyhttpcpp/common/BaseLogger.h"
+#include "easyhttpcpp/common/CommonExports.h"
 #include "easyhttpcpp/common/LogLevel.h"
 #include "easyhttpcpp/common/StringUtil.h"
 
@@ -25,13 +26,15 @@ namespace common {
 #define EASYHTTPCPP_LOG_V(pTag, pFormat, ...) EASYHTTPCPP_BASE_LOG_V(easyhttpcpp::common::CoreLogger::getInstance(), pTag, \
         pFormat, ##__VA_ARGS__)
 
-class CoreLogger : public BaseLogger {
+class EASYHTTPCPP_COMMON_API CoreLogger : public BaseLogger {
 public:
-    static CoreLogger& getInstance();
+    static CoreLogger* getInstance();
 
 private:
     CoreLogger();
     virtual ~CoreLogger();
+
+    static bool s_terminated;
 
     friend class Poco::SingletonHolder<CoreLogger>;
 

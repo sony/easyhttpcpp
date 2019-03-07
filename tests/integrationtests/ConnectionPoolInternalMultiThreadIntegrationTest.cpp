@@ -10,11 +10,11 @@
 #include "Poco/Net/HTTPResponse.h"
 
 #include "easyhttpcpp/common/CommonMacros.h"
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/ConnectionPool.h"
 #include "easyhttpcpp/Request.h"
+#include "TestLogger.h"
 
 #include "ConnectionInternal.h"
 #include "ConnectionPoolInternal.h"
@@ -48,7 +48,7 @@ public:
     {
         m_beforeExecuteEvent.set();        
         if (!m_startToExecuteEvent.tryWait(TestFailureTimeout)) {
-            EASYHTTPCPP_LOG_E(Tag, "start to execute event is time out. id=%u", m_id);
+            EASYHTTPCPP_TESTLOG_E(Tag, "start to execute event is time out. id=%u", m_id);
             m_result = false;
             return;
         }
@@ -126,9 +126,9 @@ public:
 protected:
     virtual bool execute()
     {
-        EASYHTTPCPP_LOG_D(Tag, "RemoveConnectionExecutionRunner begin removeConnection");
+        EASYHTTPCPP_TESTLOG_I(Tag, "RemoveConnectionExecutionRunner begin removeConnection");
         bool ret = m_pConnectionPoolInternal->removeConnection(m_pConnectionInternal);
-        EASYHTTPCPP_LOG_D(Tag, "RemoveConnectionExecutionRunner end removeConnection");
+        EASYHTTPCPP_TESTLOG_I(Tag, "RemoveConnectionExecutionRunner end removeConnection");
         return ret;
     }
 private:
@@ -146,9 +146,9 @@ public:
 protected:
     virtual bool execute()
     {
-        EASYHTTPCPP_LOG_D(Tag, "ReleaseConnectionExecutionRunner begin releaseConnection");
+        EASYHTTPCPP_TESTLOG_I(Tag, "ReleaseConnectionExecutionRunner begin releaseConnection");
         bool ret = m_pConnectionPoolInternal->releaseConnection(m_pConnectionInternal);
-        EASYHTTPCPP_LOG_D(Tag, "ReleaseConnectionExecutionRunner end releaseConnection");
+        EASYHTTPCPP_TESTLOG_I(Tag, "ReleaseConnectionExecutionRunner end releaseConnection");
         return ret;
     }
 
@@ -167,6 +167,8 @@ protected:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 
     Poco::AutoPtr<ConnectionPoolExecutionRunner> m_pRunners[MultiThreadCount];

@@ -11,10 +11,12 @@
 #include "Poco/RefCountedObject.h"
 #include "Poco/Util/MapConfiguration.h"
 
+#include "easyhttpcpp/db/DbExports.h"
+
 namespace easyhttpcpp {
 namespace db {
 
-class ContentValues : public Poco::RefCountedObject {
+class EASYHTTPCPP_DB_API ContentValues : public Poco::RefCountedObject {
 public:
     ContentValues();
     virtual ~ContentValues();

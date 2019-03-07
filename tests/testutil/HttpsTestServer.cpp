@@ -51,16 +51,25 @@ void HttpsTestServer::useDefaultCa(bool defaultCaUsed)
     m_defaultCaUsed = defaultCaUsed;
 }
 
-Poco::Net::ServerSocket* HttpsTestServer::newSocket(unsigned int port)
+Poco::Net::ServerSocket* HttpsTestServer::newSocket(unsigned short port)
 {
     EASYHTTPCPP_LOG_D(Tag, "newSocket: privateKeyFile=%s", m_privateKeyFile.toString().c_str());
     EASYHTTPCPP_LOG_D(Tag, "newSocket: certificateFile=%s", m_certificateFile.toString().c_str());
     EASYHTTPCPP_LOG_D(Tag, "newSocket: caLocation=%s", m_caLocation.toString().c_str());
 
+#ifdef _WIN32
+    Poco::Net::Context::Ptr pContext = new Poco::Net::Context(Poco::Net::Context::SERVER_USE,
+            m_certificateFile.toString(),
+            Poco::Net::Context::VERIFY_RELAXED,
+            Poco::Net::Context::OPT_LOAD_CERT_FROM_FILE,
+            Poco::Net::Context::CERT_STORE_TRUST);
+    return new Poco::Net::SecureServerSocket(port, 64, pContext);
+#else
     Poco::Net::Context::Ptr pContext = new Poco::Net::Context(Poco::Net::Context::SERVER_USE,
             m_privateKeyFile.toString(), m_certificateFile.toString(), m_caLocation.toString(),
             Poco::Net::Context::VERIFY_RELAXED, 9, m_defaultCaUsed);
     return new Poco::Net::SecureServerSocket(port, 64, pContext);
+#endif
 }
 
 } /* namespace testutil */

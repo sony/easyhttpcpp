@@ -11,6 +11,7 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/db/DbExports.h"
 #include "easyhttpcpp/db/SqliteCursor.h"
 
 namespace easyhttpcpp {
@@ -18,7 +19,7 @@ namespace db {
 
 class ContentValues;
 
-class SqliteDatabase : public Poco::RefCountedObject {
+class EASYHTTPCPP_DB_API SqliteDatabase : public Poco::RefCountedObject {
 public:
     typedef long long RowId;
     typedef Poco::AutoPtr<SqliteDatabase> Ptr;
@@ -45,9 +46,9 @@ public:
 
     virtual SqliteCursor::Ptr rawQuery(const std::string& sql, const std::vector<std::string>* selectionArgs);
 
-    virtual RowId insert(const std::string& table, const ContentValues& values);
+    virtual void insert(const std::string& table, const ContentValues& values);
 
-    virtual RowId replace(const std::string& table, const ContentValues& initialValues);
+    virtual void replace(const std::string& table, const ContentValues& initialValues);
 
     virtual size_t deleteRows(const std::string& table, const std::string* whereClause,
             const std::vector<std::string>* whereArgs);
@@ -62,6 +63,8 @@ public:
     virtual void setTransactionSuccessful();
 
     virtual void close();
+
+    virtual void closeSqliteSession();
 
     virtual unsigned int getVersion();
 

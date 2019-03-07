@@ -13,6 +13,7 @@
 #include "Poco/HashMap.h"
 #include "Poco/NumberFormatter.h"
 #include "Poco/Path.h"
+#include "Poco/Thread.h"
 #include "Poco/Timestamp.h"
 #include "Poco/URI.h"
 #include "Poco/Net/HTTPRequestHandler.h"
@@ -35,6 +36,7 @@
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
 #include "TestDefs.h"
+#include "TestLogger.h"
 #include "TimeInRangeMatcher.h"
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
@@ -71,6 +73,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -207,6 +211,34 @@ public:
             response.setContentType(HttpTestConstants::DefaultResponseContentType);
             response.setContentLength(strlen(HttpTestConstants::DefaultResponseBody));
             response.set(HttpTestConstants::HeaderCacheControl, HttpTestConstants::MaxAgeOneHour);
+            std::ostream& ostr = response.send();
+            ostr << HttpTestConstants::DefaultResponseBody;
+        } else {
+            response.setContentType(DifferentResponseContentType2);
+            response.setContentLength(strlen(DifferentResponseBody2));
+            std::ostream& ostr = response.send();
+            ostr << DifferentResponseBody2;
+        }
+    }
+private:
+    int m_count;
+};
+
+class MaxAge3SecAndSecondIsDefferentResponseRequestHandler : public Poco::Net::HTTPRequestHandler {
+public:
+
+    MaxAge3SecAndSecondIsDefferentResponseRequestHandler() : m_count(0)
+    {
+    }
+
+    virtual void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
+    {
+        response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
+        if (m_count == 0) {
+            m_count++;
+            response.setContentType(HttpTestConstants::DefaultResponseContentType);
+            response.setContentLength(strlen(HttpTestConstants::DefaultResponseBody));
+            response.set(HttpTestConstants::HeaderCacheControl, HttpTestConstants::MaxAge3Sec);
             std::ostream& ostr = response.send();
             ostr << HttpTestConstants::DefaultResponseBody;
         } else {
@@ -880,7 +912,7 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 }
 
 TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
-        execute_ReturnsResponseAndNotStoreToCache_WhenGetMethodAndNoCacheInRequestCacheControl)
+        execute_ReturnsResponseAndStoresToCache_WhenGetMethodAndNoCacheInRequestCacheControl)
 {
     // Given: exist in cache
 
@@ -934,6 +966,8 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url).setCacheControl(pCacheControl2).build();
     Call::Ptr pCall2 = pHttpClient2->newCall(pRequest2);
 
+    Poco::Timestamp startTime;
+
     // execute GET method.
     Response::Ptr pResponse2 = pCall2->execute();
     EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse2->getCode());
@@ -943,7 +977,247 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // read response body and close
     std::string responseBody2 = pResponse2->getBody()->toString();
 
-    // check database (old data for no-cache)
+    Poco::Timestamp endTime;
+
+    // check database (response to no-cache request is cached)
+    std::time_t startSec = startTime.epochTime();
+    std::time_t endSec = endTime.epochTime();
+    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
+    EXPECT_EQ(key, metadata2.getKey());
+    EXPECT_EQ(url, metadata2.getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
+    EXPECT_EQ(4, metadata2.getResponseHeaders()->getSize());
+    EXPECT_THAT(metadata2.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+        testutil::containsInHeader("Content-Length", "50"), testutil::containsInHeader("Content-Type", "text/html"),
+        testutil::hasKeyInHeader("Date")));
+    EXPECT_EQ(strlen(DifferentResponseBody2), metadata2.getResponseBodySize());
+    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+
+    // check cached response body
+    EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
+            testutil::equalsContentsOfFile(DifferentResponseBody2, strlen(DifferentResponseBody2)));
+}
+
+TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
+        execute_ReturnsResponseAndNotStoreToCache_WhenGetMethodAndNoStoreInRequestCacheControl)
+{
+    // Given: not exist in cache
+    HttpTestServer testServer;
+    OneHourMaxAgeAndSecondIsDefferentResponseRequestHandler handler;
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    std::string cachePath = HttpTestUtil::getDefaultCachePath();
+    HttpCache::Ptr pCache = HttpCache::createCache(Poco::Path(cachePath), HttpTestConstants::DefaultCacheMaxSize);
+
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).
+            WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder;
+    EasyHttp::Ptr pHttpClient = httpClientBuilder.setCache(pCache).addNetworkInterceptor(pMockNetworkInterceptor)
+            .build();
+    CacheControl::Builder cacheControlBuilder;
+    CacheControl::Ptr pCacheControl = cacheControlBuilder.setNoStore(true).build();
+    Request::Builder requestBuilder;
+    std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
+    Request::Ptr pRequest = requestBuilder.setUrl(url).setCacheControl(pCacheControl).build();
+    Call::Ptr pCall = pHttpClient->newCall(pRequest);
+
+    // When: GET Method with no-store in request and ResponseBodyStream::close.
+    Response::Ptr pResponse = pCall->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse->getCode());
+
+    // check response header
+    ssize_t contentLength = pResponse->getContentLength();
+    ASSERT_EQ(strlen(HttpTestConstants::DefaultResponseBody), contentLength);
+
+    // read response body and close
+    pResponse->getBody()->toString();
+
+    // Then: not store to cache.
+    // check database
+    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
+    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
+    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+
+    // not exist cached response body
+    Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
+            Request::HttpMethodGet, url));
+    EXPECT_FALSE(responseBodyFile.exists());
+}
+
+TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
+        execute_ReturnsResponseWithCachedResponse_WhenGetMethodAndExistCacheAndNoStoreInRequestCacheControlTwice)
+{
+    // Given: exist in cache
+    HttpTestServer testServer;
+    OneHourMaxAgeAndSecondIsDefferentResponseRequestHandler handler;
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    std::string cachePath = HttpTestUtil::getDefaultCachePath();
+    HttpCache::Ptr pCache = HttpCache::createCache(Poco::Path(cachePath), HttpTestConstants::DefaultCacheMaxSize);
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder1;
+    EasyHttp::Ptr pHttpClient1 = httpClientBuilder1.setCache(pCache).build();
+    Request::Builder requestBuilder1;
+    std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
+    Request::Ptr pRequest1 = requestBuilder1.setUrl(url).build();
+    Call::Ptr pCall1 = pHttpClient1->newCall(pRequest1);
+
+    // execute GET method.
+    Response::Ptr pResponse1 = pCall1->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse1->getCode());
+
+    // check response header
+    ssize_t contentLength1 = pResponse1->getContentLength();
+    ASSERT_EQ(strlen(HttpTestConstants::DefaultResponseBody), contentLength1);
+
+    // read response body and close
+    pResponse1->getBody()->toString();
+
+    // check database
+    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
+    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
+    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+
+    // network access does not occur.
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).Times(0);
+
+    // When: GET Method with no-store in request twice.
+    size_t executeCountMax = 2;
+    for(size_t i = 0; i < executeCountMax; ++i) {
+        // create EasyHttp
+        EasyHttp::Builder httpClientBuilder2;
+        EasyHttp::Ptr pHttpClient2 = httpClientBuilder2.setCache(pCache).addNetworkInterceptor(pMockNetworkInterceptor).
+                build();
+
+        CacheControl::Builder cacheControlBuilder;
+        CacheControl::Ptr pCacheControl = cacheControlBuilder.setNoStore(true).build();
+        Request::Builder requestBuilder2;
+        Request::Ptr pRequest2 = requestBuilder2.setUrl(url).setCacheControl(pCacheControl).build();
+        Call::Ptr pCall2 = pHttpClient2->newCall(pRequest2);
+
+        Poco::Timestamp startTime;
+
+        // execute GET method.
+        Response::Ptr pResponse2 = pCall2->execute();
+        EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse2->getCode());
+
+        // read response body and close
+        pResponse2->getBody()->toString();
+
+        Poco::Timestamp endTime;
+
+        // Then: use cached response and not remove cached response.
+        // check database (old data exists)
+        std::time_t startSec = startTime.epochTime();
+        std::time_t endSec = endTime.epochTime();
+        HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+        EXPECT_TRUE(db.getMetadataAll(key, metadata2));
+        EXPECT_EQ(key, metadata2.getKey());
+        EXPECT_EQ(url, metadata2.getUrl());
+        EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
+        EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
+        EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
+        EXPECT_THAT(metadata2.getResponseHeaders(), testutil::equalHeaders(metadata1.getResponseHeaders()));
+        EXPECT_EQ(metadata1.getResponseBodySize(), metadata2.getResponseBodySize());
+        EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
+        EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
+        EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
+        // update only last accessed time
+        EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+
+        // check cached response body (old data exists)
+        EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
+                testutil::equalsContentsOfFile(HttpTestConstants::DefaultResponseBody,
+                strlen(HttpTestConstants::DefaultResponseBody)));
+    }
+}
+
+TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
+        execute_ReturnsResponseAndNotStoreToCache_WhenGetMethodAndExistCacheAndCacheIsStaleAndNoStoreInRequestCacheControl)
+{
+    // Given: exist in cache
+    HttpTestServer testServer;
+    MaxAge3SecAndSecondIsDefferentResponseRequestHandler handler;
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    std::string cachePath = HttpTestUtil::getDefaultCachePath();
+    HttpCache::Ptr pCache = HttpCache::createCache(Poco::Path(cachePath), HttpTestConstants::DefaultCacheMaxSize);
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder1;
+    EasyHttp::Ptr pHttpClient1 = httpClientBuilder1.setCache(pCache).build();
+    Request::Builder requestBuilder1;
+    std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
+    Request::Ptr pRequest1 = requestBuilder1.setUrl(url).build();
+    Call::Ptr pCall1 = pHttpClient1->newCall(pRequest1);
+
+    // execute GET method.
+    Response::Ptr pResponse1 = pCall1->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse1->getCode());
+
+    // check response header
+    ssize_t contentLength1 = pResponse1->getContentLength();
+    ASSERT_EQ(strlen(HttpTestConstants::DefaultResponseBody), contentLength1);
+
+    // read response body and close
+    pResponse1->getBody()->toString();
+
+    // check database
+    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
+    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
+    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+
+    // wait stale to cache
+    Poco::Thread::sleep(5000); // max-age is 3 sec; wait for 5 sec
+
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).
+            WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
+
+    // When: GET Method with no-store in request.
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder2;
+    EasyHttp::Ptr pHttpClient2 = httpClientBuilder2.setCache(pCache).addNetworkInterceptor(pMockNetworkInterceptor).
+            build();
+
+    CacheControl::Builder cacheControlBuilder;
+    CacheControl::Ptr pCacheControl = cacheControlBuilder.setNoStore(true).build();
+    Request::Builder requestBuilder2;
+    Request::Ptr pRequest2 = requestBuilder2.setUrl(url).setCacheControl(pCacheControl).build();
+    Call::Ptr pCall2 = pHttpClient2->newCall(pRequest2);
+
+    Poco::Timestamp startTime;
+
+    // execute GET method.
+    Response::Ptr pResponse2 = pCall2->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse2->getCode());
+
+    // read response body and close
+    std::string responseBody = pResponse2->getBody()->toString();
+
+    Poco::Timestamp endTime;
+
+    // Then: use network access and not store to cache and not remove cached response.
+    // check database (old data exists)
+    std::time_t startSec = startTime.epochTime();
+    std::time_t endSec = endTime.epochTime();
     HttpCacheDatabase::HttpCacheMetadataAll metadata2;
     EXPECT_TRUE(db.getMetadataAll(key, metadata2));
     EXPECT_EQ(key, metadata2.getKey());
@@ -956,12 +1230,17 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
     EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
     EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_EQ(metadata1.getLastAccessedAtEpoch(), metadata2.getLastAccessedAtEpoch());
+    // update only last accessed time
+    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
-    // check cached response body (old data for no-cache)
+    // check cached response body (old data exists)
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
             testutil::equalsContentsOfFile(HttpTestConstants::DefaultResponseBody,
             strlen(HttpTestConstants::DefaultResponseBody)));
+
+    // response body is network response
+    EXPECT_EQ(strlen(DifferentResponseBody2), responseBody.size());
+    EXPECT_EQ(DifferentResponseBody2, responseBody);
 }
 
 TEST_F(CallWithCacheAfterSendRequestIntegrationTest, execute_ReturnesResponseAndNotStoreToCache_WhenPostMethod)

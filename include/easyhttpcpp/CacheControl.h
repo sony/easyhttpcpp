@@ -9,10 +9,11 @@
 #include "Poco/RefCountedObject.h"
 
 #include "easyhttpcpp/Headers.h"
+#include "easyhttpcpp/HttpExports.h"
 
 namespace easyhttpcpp {
 
-class CacheControl : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API CacheControl : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<CacheControl> Ptr;
 
@@ -108,7 +109,7 @@ private:
 
 public:
 
-    class Builder {
+    class EASYHTTPCPP_HTTP_API Builder {
     public:
         /**
          * 

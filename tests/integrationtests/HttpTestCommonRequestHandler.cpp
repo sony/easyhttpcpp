@@ -9,12 +9,15 @@
 #include "Poco/Thread.h"
 #include "Poco/URI.h"
 
+#include "TestLogger.h"
+
 #include "HttpTestConstants.h"
 #include "HttpTestCommonRequestHandler.h"
 
 namespace easyhttpcpp {
 namespace test {
 
+static const std::string Tag = "HttpTestCommonRequestHandler";
 static const int TestFailureTimeout = 10 * 1000; // milliseconds
 static const char* const HeaderConnection = "Connection";
 
@@ -85,7 +88,17 @@ void HttpTestCommonRequestHandler::WaitRequestHandler::handleRequest(Poco::Net::
 {
     saveRequestParamemter(request);
 
-    m_waitEvent.tryWait(TestFailureTimeout);
+    m_startEvent.set();
+
+    if (!m_waitEvent.tryWait(TestFailureTimeout)) {
+        EASYHTTPCPP_TESTLOG_E(Tag, "WaitRequestHandler: tryWait timed out.");
+        response.setContentType(HttpTestConstants::DefaultResponseContentType);
+        response.setStatus(Poco::Net::HTTPResponse::HTTP_BAD_REQUEST);
+        response.setContentLength(strlen(HttpTestConstants::BadRequestResponseBody));
+        std::ostream& ostr = response.send();
+        ostr << HttpTestConstants::BadRequestResponseBody;
+        return;
+    }
 
     response.setContentType(HttpTestConstants::DefaultResponseContentType);
     response.setStatus(Poco::Net::HTTPResponse::HTTP_OK);
@@ -98,6 +111,11 @@ void HttpTestCommonRequestHandler::WaitRequestHandler::handleRequest(Poco::Net::
 void HttpTestCommonRequestHandler::WaitRequestHandler::set()
 {
     m_waitEvent.set();
+}
+
+bool HttpTestCommonRequestHandler::WaitRequestHandler::waitForStart(long timeoutMilliSec)
+{
+    return m_startEvent.tryWait(timeoutMilliSec);
 }
 
 void HttpTestCommonRequestHandler::ConnectionCloseRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,

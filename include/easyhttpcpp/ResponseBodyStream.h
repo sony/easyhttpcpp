@@ -7,6 +7,11 @@
 
 #include <istream>
 
+#ifdef _WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 

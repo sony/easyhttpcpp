@@ -15,6 +15,9 @@ public:
     static const char* const AnalyticsDispatchEndpointQaV2;
     static const char* const LoaderDistributionBaseUrl;
     static const char* const LoaderDistributionCertificateUrl1008;
+    static const char* const BaseUrlSni;
+    static const char* const CertificateUrlEnclaveConfiguration;
+    static const char* const CertificateUrlSni;
 };
 
 } /* namespace testutil */

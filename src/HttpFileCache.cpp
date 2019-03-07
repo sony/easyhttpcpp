@@ -9,6 +9,7 @@
 #include "Poco/Timestamp.h"
 
 #include "easyhttpcpp/common/CoreLogger.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 
@@ -23,6 +24,7 @@ using easyhttpcpp::common::Cache;
 using easyhttpcpp::common::CacheMetadata;
 using easyhttpcpp::common::CacheInfoWithDataSize;
 using easyhttpcpp::common::CacheStrategy;
+using easyhttpcpp::common::FileUtil;
 
 namespace easyhttpcpp {
 
@@ -40,6 +42,7 @@ HttpFileCache::HttpFileCache(const Poco::Path& cacheRootDir, size_t maxSize) : m
 
 HttpFileCache::~HttpFileCache()
 {
+    m_metadataDb->closeSqliteSession();
 }
 
 bool HttpFileCache::getMetadata(const std::string& key, CacheMetadata::Ptr& pCacheMetadata)
@@ -232,21 +235,16 @@ bool HttpFileCache::put(const std::string& key, CacheMetadata::Ptr pCacheMetadat
 
     Poco::File tempFile(path);
     std::string targetFilename = makeCachedFilename(key);
-    try {
-        tempFile.renameTo(targetFilename);
-    } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "can not move cache file. [%s] -> [%s] : [%s]", path.c_str(), targetFilename.c_str(),
-                e.message().c_str());
+    if (!FileUtil::moveFile(tempFile, Poco::File(targetFilename))) {
+        EASYHTTPCPP_LOG_D(Tag, "can not move cache file. [%s] -> [%s]", path.c_str(), targetFilename.c_str());
         return false;
     }
 
     if (!m_metadataDb->updateMetadata(key, static_cast<HttpCacheMetadata*> (pCacheMetadata.get()))) {
         EASYHTTPCPP_LOG_D(Tag, "put : [%s] update database failed.", key.c_str());
-        try {
-            Poco::File cacheFile(targetFilename);
-            cacheFile.remove(false);
-        } catch (const Poco::Exception& e) {
-            EASYHTTPCPP_LOG_D(Tag, "can not remove cache file. [%s] : [%s]", targetFilename.c_str(), e.message().c_str());
+        Poco::File cacheFile(targetFilename);
+        if (!FileUtil::removeFileIfPresent(cacheFile)) {
+            EASYHTTPCPP_LOG_D(Tag, "can not remove cache file. [%s]", targetFilename.c_str());
         }
         return false;
     }
@@ -312,7 +310,21 @@ bool HttpFileCache::purge(bool mayDeleteIfBusy)
         return false;
     }
 
-    return m_lruCacheStrategy->clear(mayDeleteIfBusy);
+    bool ret = m_lruCacheStrategy->clear(mayDeleteIfBusy);
+
+    // delete database file if HttpLruCacheStrategy::clear returns true
+    // because if false returned, cache file is now reading.
+    if (ret) {
+        deleteCacheFile();
+    }
+    return ret;
+}
+
+void HttpFileCache::deleteCacheFile()
+{
+    // session should be closed before remove the data.
+    m_metadataDb->closeSqliteSession();
+    m_metadataDb->deleteDatabaseFile();
 }
 
 std::istream* HttpFileCache::createStreamFromCache(const std::string& key)
@@ -370,13 +382,8 @@ bool HttpFileCache::onRemove(const std::string& key)
     }
 
     Poco::File file(makeCachedFilename(key));
-    try {
-        if (file.exists()) {
-            file.remove();
-        }
-    } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "Failed to remove cached file. [%s] : Details: %s", file.path().c_str(),
-                e.message().c_str());
+    if (!FileUtil::removeFileIfPresent(file)) {
+        EASYHTTPCPP_LOG_D(Tag, "Failed to remove cached file. [%s]", file.path().c_str());
         return false;
     }
 
@@ -416,10 +423,8 @@ bool HttpFileCache::initializeCache()
         return true;
     }
     Poco::File file(m_cacheRootDir);
-    try {
-        file.createDirectories();
-    } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "create cache root directory failed %s", e.message().c_str());
+    if (!FileUtil::createDirsIfAbsent(file)) {
+        EASYHTTPCPP_LOG_D(Tag, "Create cache root directory failed.");
         return false;
     }
 

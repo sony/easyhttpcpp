@@ -7,9 +7,9 @@
 
 #include "gtest/gtest.h"
 
-#include "Poco/Crypto/OpenSSLInitializer.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/common/OpenSslInitializer.h"
 #include "easyhttpcpp/EasyHttp.h"
 #include "TestPreferences.h"
 
@@ -44,7 +44,7 @@ public:
     }
     
 protected:
-    Poco::Crypto::OpenSSLInitializer m_openSslInitializer;
+    easyhttpcpp::common::OpenSslInitializer m_openSslInitializer;
 };
 
 } /* namespace test */

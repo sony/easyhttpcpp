@@ -3,7 +3,9 @@
  */
 
 #include <limits.h>
+#ifndef _WIN32
 #include <sys/resource.h>
+#endif
 
 #include "gtest/gtest.h"
 

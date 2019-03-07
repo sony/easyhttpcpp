@@ -5,13 +5,37 @@
 #include "easyhttpcpp/RequestBody.h"
 
 #include "RequestBodyForByteBuffer.h"
+#include "RequestBodyForSharedPtrByteBuffer.h"
+#include "RequestBodyForSharedPtrStream.h"
+#include "RequestBodyForSharedPtrString.h"
 #include "RequestBodyForStream.h"
 #include "RequestBodyForString.h"
 
+using easyhttpcpp::common::ByteArrayBuffer;
+
 namespace easyhttpcpp {
+
+RequestBody::RequestBody(MediaType::Ptr pMediaType) : m_pMediaType(pMediaType)
+{
+}
 
 RequestBody::~RequestBody()
 {
+}
+
+RequestBody::Ptr RequestBody::create(MediaType::Ptr pMediaType, Poco::SharedPtr<std::istream> pContent)
+{
+    return new RequestBodyForSharedPtrStream(pMediaType, pContent);
+}
+
+RequestBody::Ptr RequestBody::create(MediaType::Ptr pMediaType, Poco::SharedPtr<std::string> pContent)
+{
+    return new RequestBodyForSharedPtrString(pMediaType, pContent);
+}
+
+RequestBody::Ptr RequestBody::create(MediaType::Ptr pMediaType, Poco::SharedPtr<ByteArrayBuffer> pContent)
+{
+    return new RequestBodyForSharedPtrByteBuffer(pMediaType, pContent);
 }
 
 RequestBody::Ptr RequestBody::create(MediaType::Ptr pMediaType, std::istream& content)
@@ -32,11 +56,6 @@ RequestBody::Ptr RequestBody::create(MediaType::Ptr pMediaType, const easyhttpcp
 MediaType::Ptr RequestBody::getMediaType() const
 {
     return m_pMediaType;
-}
-
-void RequestBody::setMediaType(MediaType::Ptr pMediaType)
-{
-    m_pMediaType = pMediaType;
 }
 
 } /* namespace easyhttpcpp */

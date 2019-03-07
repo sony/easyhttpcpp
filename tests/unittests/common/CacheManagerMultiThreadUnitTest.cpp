@@ -9,7 +9,7 @@
 #include "Poco/ThreadPool.h"
 
 #include "easyhttpcpp/common/CacheManager.h"
-#include "easyhttpcpp/common/CoreLogger.h"
+#include "TestLogger.h"
 
 using easyhttpcpp::common::ByteArrayBuffer;
 
@@ -91,7 +91,7 @@ public:
         setExecuteIfFirstCache();
         return true;
     }
-    
+
     bool isExecuted()
     {
         return m_executeL2;
@@ -101,7 +101,7 @@ private:
     void setExecuteIfFirstCache()
     {
         if (Poco::Thread::currentTid() != m_mainThreadId) {
-            EASYHTTPCPP_LOG_D(Tag, "set L2 of 1st. cache execute");
+            EASYHTTPCPP_TESTLOG_I(Tag, "set L2 of 1st. cache execute");
             m_executeL2 = true;
         }
     }
@@ -188,7 +188,7 @@ public:
         checkExecuteOrderIfSecondCache();
         return true;
     }
-    
+
     bool wait()
     {
         if (!m_firstCacheStartEvent.tryWait(TestFailureTimeout)) {
@@ -211,7 +211,7 @@ private:
     {
         if (Poco::Thread::currentTid() == m_mainThreadId) {
             if (m_pL2Cache->isExecuted()) {
-                EASYHTTPCPP_LOG_D(Tag, "set L1 of 2nd. cache execute");
+                EASYHTTPCPP_TESTLOG_I(Tag, "set L1 of 2nd. cache execute");
                 m_executeAfterFirstCache = true;
             }
         }

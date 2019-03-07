@@ -10,12 +10,13 @@
 #include "Poco/Mutex.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/db/DbExports.h"
 #include "easyhttpcpp/db/SqliteDatabase.h"
 
 namespace easyhttpcpp {
 namespace db {
 
-class SqliteOpenHelper {
+class EASYHTTPCPP_DB_API SqliteOpenHelper {
 public:
     SqliteOpenHelper(const Poco::Path& path, unsigned int version);
     virtual ~SqliteOpenHelper();
@@ -31,6 +32,7 @@ public:
     virtual void onUpgrade(SqliteDatabase& db, unsigned int oldVersion, unsigned int newVersion) = 0;
     virtual void onDowngrade(SqliteDatabase& db, unsigned int oldVersion, unsigned int newVersion);
     virtual void close();
+    virtual void closeSqliteSession();
 
 private:
     SqliteDatabase::Ptr getDatabase();

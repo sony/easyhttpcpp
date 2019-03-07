@@ -7,12 +7,13 @@
 
 #include <string>
 
+#include "easyhttpcpp/common/CommonExports.h"
 #include "easyhttpcpp/common/Typedef.h"
 
 namespace easyhttpcpp {
 namespace common {
 
-class ByteArrayBuffer {
+class EASYHTTPCPP_COMMON_API ByteArrayBuffer {
 public:
     ByteArrayBuffer();
     ByteArrayBuffer(size_t capacity);

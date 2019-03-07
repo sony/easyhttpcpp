@@ -7,7 +7,9 @@
 
 #include <string>
 
+#include "Poco/AutoPtr.h"
 #include "Poco/Buffer.h"
+#include "Poco/RefCountedObject.h"
 #include "Poco/SharedPtr.h"
 #include "Poco/URI.h"
 #include "Poco/Net/HTTPRequestHandler.h"
@@ -15,11 +17,18 @@
 #include "Poco/Net/HTTPServerResponse.h"
 #include "Poco/Net/NameValueCollection.h"
 
+#ifdef _WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 namespace easyhttpcpp {
 namespace test {
 
-class HttpTestBaseRequestHandler : public Poco::Net::HTTPRequestHandler {
+class HttpTestBaseRequestHandler : public Poco::Net::HTTPRequestHandler, public Poco::RefCountedObject {
 public:
+    typedef Poco::AutoPtr<HttpTestBaseRequestHandler> Ptr;
+
     HttpTestBaseRequestHandler();
     virtual ~HttpTestBaseRequestHandler();
 

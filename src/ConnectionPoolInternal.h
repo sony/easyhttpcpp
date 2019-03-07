@@ -53,7 +53,6 @@ private:
     bool removeConnectionWithoutLock(ConnectionInternal::Ptr pConnectionInternal);
     ConnectionInternal::Ptr findAndReuseConnection(const std::string& url, EasyHttpContext::Ptr pContext);
     void updateConnections();
-    Poco::Net::Context::Ptr createPocoContext(EasyHttpContext::Ptr pContext);
     Poco::Timespan getKeepAliveTimeoutForPoco();
 
     unsigned int m_keepAliveIdleCountMax;

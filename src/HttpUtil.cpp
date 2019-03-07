@@ -75,7 +75,7 @@ std::string HttpUtil::makeCacheKey(Request::Ptr pRequest)
 std::string HttpUtil::makeCacheKey(Request::HttpMethod httpMethod, const std::string& url)
 {
     // method + url -> digest
-    std::string key = DigestUtil::sha256Hex(httpMethodToString(httpMethod) + url);
+    std::string key = DigestUtil::createHashedFileName(httpMethodToString(httpMethod) + url);
     if (key.empty()) {
         EASYHTTPCPP_LOG_D(Tag, "makeCacheKey failed.(empty string)");
     }

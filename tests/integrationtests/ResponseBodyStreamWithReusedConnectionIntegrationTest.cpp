@@ -15,6 +15,7 @@
 #include "HeaderContainMatcher.h"
 #include "HttpsTestServer.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 #include "TestPreferences.h"
 
 #include "CallInternal.h"
@@ -55,6 +56,8 @@ public:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 

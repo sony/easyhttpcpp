@@ -24,6 +24,7 @@ const char* const HttpTestConstants::DefaultResponseBody = "response data 1";
 const char* const HttpTestConstants::BadRequestResponseBody = "Bad Request";
 const char* const HttpTestConstants::HeaderCacheControl = "Cache-Control";
 const char* const HttpTestConstants::MaxAgeOneHour = "max-age=3600"; // 1 hour
+const char* const HttpTestConstants::MaxAge3Sec = "max-age=3"; // 3 sec
 const char* const HttpTestConstants::HeaderLastModified = "Last-Modified";
 const char* const HttpTestConstants::HeaderValueLastModified = "Mon, 25 Jul 2016 10:13:43 GMT";
 const char* const HttpTestConstants::DefaultRequestContentType = "text/plain";

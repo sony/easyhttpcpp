@@ -13,8 +13,13 @@ namespace easyhttpcpp {
 namespace test {
 
 static const std::string Url = "http://www.example.com/path/index.html";
-static const std::string SHA256AsGetMethodAndUrl = "d4ed7aaa0d5f04fad80bea5c3943741297b0a5d4c256fa1bb56dfeb00321e375";
-static const std::string SHA256AsGetMethod = "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8";
+#ifndef _WIN32
+static const std::string GetMethodAndUrlHash = "d4ed7aaa0d5f04fad80bea5c3943741297b0a5d4c256fa1bb56dfeb00321e375";
+static const std::string GetMethodHash = "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8";
+#else
+static const std::string GetMethodAndUrlHash = "efc0058bfc2909181f382018f9d1e1874333cac2";
+static const std::string GetMethodHash = "f030bbbd32966cde41037b98a8849c46b76e4bc1";
+#endif // !_WIN32
 
 static const std::string HeaderName1 = "X-My-Header-Name1";
 static const std::string HeaderName2 = "X-My-Header-Name2";
@@ -100,7 +105,7 @@ TEST(HttpUtilUnitTest, makeCacheKeyWithRequest_ReturnsHashedValue)
     // When: call makeCacheKey()
     std::string key = HttpUtil::makeCacheKey(request);
     // Then: returns hashed value of HTTP method + URL
-    EXPECT_EQ(SHA256AsGetMethodAndUrl, key);
+    EXPECT_EQ(GetMethodAndUrlHash, key);
 }
 
 TEST(HttpUtilUnitTest, makeCacheKeyWithRequest_ReturnsHashedValue_WhenUrlIsNotSet)
@@ -112,7 +117,7 @@ TEST(HttpUtilUnitTest, makeCacheKeyWithRequest_ReturnsHashedValue_WhenUrlIsNotSe
     // When: call makeCacheKey()
     std::string key = HttpUtil::makeCacheKey(request);
     // Then: returns hashed value of HTTP method
-    EXPECT_EQ(SHA256AsGetMethod, key);
+    EXPECT_EQ(GetMethodHash, key);
 }
 
 TEST(HttpUtilUnitTest, makeCacheKeyWithHttpMethodAndUrl_ReturnsHashedValue)
@@ -121,7 +126,7 @@ TEST(HttpUtilUnitTest, makeCacheKeyWithHttpMethodAndUrl_ReturnsHashedValue)
     // When: call makeCacheKey()
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, Url);
     // Then: returns hashed value of HTTP method + URL
-    EXPECT_EQ(SHA256AsGetMethodAndUrl, key);
+    EXPECT_EQ(GetMethodAndUrlHash, key);
 }
 
 TEST(HttpUtilUnitTest, makeCacheKeyWithHttpMethodAndUrl_ReturnsHashedValue_WhenUrlIsEmpty)
@@ -130,7 +135,7 @@ TEST(HttpUtilUnitTest, makeCacheKeyWithHttpMethodAndUrl_ReturnsHashedValue_WhenU
     // When: call makeCacheKey()
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, "");
     // Then: returns hashed value of HTTP method
-    EXPECT_EQ(SHA256AsGetMethod, key);
+    EXPECT_EQ(GetMethodHash, key);
 }
 
 TEST(HttpUtilUnitTest, exchangeJsonStrToHeaders_ReturnsHeadersInstance)
@@ -220,7 +225,8 @@ TEST(HttpUtilUnitTest, makeCachedResponseBodyFilename_ReturnsFilename_WhenSpecif
 {
     std::string cacheRootDirStr = std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + "/test/";
     Poco::Path cacheRootDir(cacheRootDirStr);
-    EXPECT_EQ(cacheRootDirStr + Key1 + CacheDataFileExtention,
+    std::string expectedFileName = Poco::Path(cacheRootDirStr + Key1 + CacheDataFileExtention).toString();
+    EXPECT_EQ(expectedFileName,
             HttpUtil::makeCachedResponseBodyFilename(cacheRootDir, Key1));
 }
 

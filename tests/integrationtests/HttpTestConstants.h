@@ -29,6 +29,7 @@ public:
     static const char* const BadRequestResponseBody;
     static const char* const HeaderCacheControl;
     static const char* const MaxAgeOneHour; // 1 hour
+    static const char* const MaxAge3Sec; // 3 sec
     static const char* const HeaderLastModified;
     static const char* const HeaderValueLastModified;
     static const char* const DefaultRequestContentType;

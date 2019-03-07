@@ -9,6 +9,7 @@
 
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/CacheManager.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/HttpException.h"
 
 #include "HttpCacheInternal.h"
@@ -19,6 +20,7 @@
 using easyhttpcpp::common::Cache;
 using easyhttpcpp::common::CacheManager;
 using easyhttpcpp::common::CacheMetadata;
+using easyhttpcpp::common::FileUtil;
 
 namespace easyhttpcpp {
 
@@ -191,16 +193,11 @@ void ResponseBodyStreamWithCaching::removeTempFile()
         EASYHTTPCPP_LOG_D(Tag, "removeTempFile: temporary file is not created.");
         return;
     }
-    try {
-        Poco::File file(m_tempFilePath);
-        if (file.exists()) {
-            EASYHTTPCPP_LOG_D(Tag, "removeTempFile: filename=%s", m_tempFilePath.c_str());
-            file.remove();
-        }
-    } catch (const Poco::Exception& e) {
+    Poco::File file(m_tempFilePath);
+    if (!FileUtil::removeFileIfPresent(file)) {
         std::string message = "can not receive response because IO error occurred.(remove)";
-        EASYHTTPCPP_LOG_D(Tag, "%s %s", message.c_str(), e.message().c_str());
-        throw HttpExecutionException(message, e);
+        EASYHTTPCPP_LOG_D(Tag, "%s", message.c_str());
+        throw HttpExecutionException(message);
     }
 }
 

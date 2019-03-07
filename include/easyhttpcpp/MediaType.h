@@ -8,12 +8,14 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
 /**
  * @brief A MediaType preserve Content-Type.
  */
-class MediaType : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API MediaType : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<MediaType> Ptr;
 

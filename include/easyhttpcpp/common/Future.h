@@ -38,7 +38,7 @@ public:
 
     /**
      * Returns true if the task was cancelled before it completed normally. This method will always return true if
-     * ::cancel(bool) returned true;
+     * #cancel(bool) returned true;
      *
      * @return true if the task was cancelled before it completed.
      */

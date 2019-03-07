@@ -2,7 +2,7 @@
  * Copyright 2017 Sony Corporation
  */
 
-#include "easyhttpcpp/common/CoreLogger.h"
+#include "TestLogger.h"
 
 #include "SynchronizedExecutionRunner.h"
 
@@ -34,7 +34,7 @@ bool SynchronizedExecutionRunner::isSuccess()
 bool SynchronizedExecutionRunner::waitToReady()
 {
     if (!m_readyEvent.tryWait(TestFailureTimeout)) {
-        EASYHTTPCPP_LOG_E(Tag, "waitToReady is time out");
+        EASYHTTPCPP_TESTLOG_E(Tag, "waitToReady is time out");
         return false;
     }
     return true;
@@ -48,7 +48,7 @@ void SynchronizedExecutionRunner::setToStart()
 bool SynchronizedExecutionRunner::waitToFinish()
 {
     if (!m_finishEvent.tryWait(TestFailureTimeout)) {
-        EASYHTTPCPP_LOG_E(Tag, "waitToFinish is time out");
+        EASYHTTPCPP_TESTLOG_E(Tag, "waitToFinish is time out");
         return false;
     }
     return true;
@@ -62,7 +62,7 @@ void SynchronizedExecutionRunner::setToReady()
 bool SynchronizedExecutionRunner::waitToStart()
 {
     if (!m_startEvent.tryWait(TestFailureTimeout)) {
-        EASYHTTPCPP_LOG_E(Tag, "waitToStart is time out");
+        EASYHTTPCPP_TESTLOG_E(Tag, "waitToStart is time out");
         return false;
     }
     return true;

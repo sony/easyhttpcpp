@@ -5,6 +5,8 @@
 #ifndef EASYHTTPCPP_EASYHTTPINTERNAL_H_INCLUDED
 #define EASYHTTPCPP_EASYHTTPINTERNAL_H_INCLUDED
 
+#include "Poco/Mutex.h"
+
 #include "easyhttpcpp/Call.h"
 #include "easyhttpcpp/EasyHttp.h"
 
@@ -24,12 +26,19 @@ public:
     virtual const std::string& getRootCaDirectory() const;
     virtual const std::string& getRootCaFile() const;
     virtual ConnectionPool::Ptr getConnectionPool() const;
+    virtual unsigned int getCorePoolSizeOfAsyncThreadPool() const;
+    virtual unsigned int getMaximumPoolSizeOfAsyncThreadPool() const;
+    virtual void invalidateAndCancel();
 
     EasyHttpContext::Ptr getHttpContenxt() const;
 private:
     EasyHttpInternal();
 
     EasyHttpContext::Ptr m_pContext;
+    unsigned int m_corePoolSizeOfAsyncThreadPool;
+    unsigned int m_maximumPoolSizeOfAsyncThreadPool;
+    Poco::FastMutex m_instanceMutex;
+    bool m_invalidated;
 
 };
 

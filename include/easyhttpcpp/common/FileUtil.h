@@ -8,10 +8,12 @@
 #include "Poco/File.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/common/CommonExports.h"
+
 namespace easyhttpcpp {
 namespace common {
 
-class FileUtil {
+class EASYHTTPCPP_COMMON_API FileUtil {
 public:
     static bool createDirsIfAbsent(const Poco::File& dir);
     static bool removeDirsIfPresent(const Poco::Path& dirPath);

@@ -10,6 +10,7 @@
 #include "easyhttpcpp/common/CacheManager.h"
 #include "easyhttpcpp/common/CacheMetadata.h"
 #include "easyhttpcpp/common/CoreLogger.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/CacheControl.h"
 #include "easyhttpcpp/HttpConstants.h"
@@ -25,6 +26,7 @@
 using easyhttpcpp::common::Cache;
 using easyhttpcpp::common::CacheManager;
 using easyhttpcpp::common::CacheMetadata;
+using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
 
 namespace easyhttpcpp {
@@ -47,6 +49,8 @@ HttpCacheInternal::HttpCacheInternal(const Poco::Path& path, size_t maxSize) : m
 
 HttpCacheInternal::~HttpCacheInternal()
 {
+    m_pCacheManager = NULL;
+    m_pFileCache = NULL;
 }
 
 const Poco::Path& HttpCacheInternal::getPath() const
@@ -63,16 +67,10 @@ void HttpCacheInternal::evictAll()
 
     Poco::FastMutex::ScopedLock lock(m_directoryMutex);
 
-    Poco::File tempPath(m_cacheTempDir);
-    try {
-        if (tempPath.exists()) {
-            tempPath.remove(true);
-        }
-    } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "Failed to remove cache temporary directory. [%s] Details: %s", m_cacheTempDir.c_str(),
-                e.message().c_str());
+    if (!FileUtil::removeDirsIfPresent(Poco::Path(m_cacheTempDir))) {
+        EASYHTTPCPP_LOG_D(Tag, "Failed to remove cache temporary directory. [%s]", m_cacheTempDir.c_str());
         throw HttpExecutionException(StringUtil::format("Failed to remove cache temporary directory.[%s]",
-                m_cacheTempDir.c_str()), e);
+                m_cacheTempDir.c_str()));
     }
 }
 
@@ -91,12 +89,10 @@ const std::string& HttpCacheInternal::getTempDirectory()
 {
     Poco::FastMutex::ScopedLock lock(m_directoryMutex);
 
-    try {
-        Poco::File file(m_cacheTempDir);
-        file.createDirectories();
-    } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "create cache temp directory failed %s", e.message().c_str());
-        throw HttpExecutionException("can not access cache temporary directory.", e);
+    Poco::File file(m_cacheTempDir);
+    if (!FileUtil::createDirsIfAbsent(file)) {
+        EASYHTTPCPP_LOG_D(Tag, "create cache temp directory failed.");
+        throw HttpExecutionException("can not access cache temporary directory.");
     }
 
     return m_cacheTempDir;

@@ -14,7 +14,7 @@
 #include "easyhttpcpp/Response.h"
 
 #include "EasyHttpContext.h"
-#include "HttpEngine.h"
+#include "HttpRequestExecutor.h"
 
 namespace easyhttpcpp {
 
@@ -24,23 +24,24 @@ public:
     CallInternal(EasyHttpContext::Ptr pContext, Request::Ptr pRequest);
     virtual ~CallInternal();
     virtual Response::Ptr execute();
-    virtual bool isExecuted() const;
+    virtual void executeAsync(ResponseCallback::Ptr pResponseCallback);
+#ifdef _WIN32
+    _declspec(deprecated) virtual bool isExecuted() const;
+#else
+    __attribute__ ((deprecated)) virtual bool isExecuted() const;
+#endif
     virtual Request::Ptr getRequest() const;
     virtual bool cancel();
     virtual bool isCancelled() const;
 
-    Response::Ptr executeAfterIntercept(Request::Ptr pRequest);
     HttpEngine::Ptr getHttpEngine();
 private:
-    Response::Ptr executeWithRetry(Request::Ptr pRequest);
-
     EasyHttpContext::Ptr m_pContext;
     Request::Ptr m_pUserRequest;
-    Response::Ptr m_pUserResponse;
+    mutable Poco::FastMutex m_instanceMutex;
     bool m_executed;
-    HttpEngine::Ptr m_pHttpEngine;
-    Poco::FastMutex m_cancelMutex;
     bool m_cancelled;
+    HttpRequestExecutor::Ptr m_pRequestExecutor;
 };
 
 } /* namespace easyhttpcpp */

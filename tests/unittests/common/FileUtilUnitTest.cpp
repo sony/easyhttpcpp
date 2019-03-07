@@ -60,6 +60,7 @@ static const std::string SourceFileDepth0 = "FileUtilSourceFile";
 static const std::string SourceFileDepth2 = Poco::Path(SubDirectoryForTest, "SourceFile").toString();
 static const std::string DestFileDepth0 = "FileUtilDestFile";
 static const std::string DestFileDepth2 = Poco::Path(SubDirectoryForTest, "DestFile").toString();
+static const std::string SourceFileNotExists = "FileUtilSourceFileNotExists";
 
 } /* namespace */
 
@@ -181,10 +182,10 @@ protected:
             Poco::Path path = createPath(targetVector->at(i), true);
             if (enableReadWrite) {
                 // change to rwx
-                TestFileUtil::changeAccessPermission(path.toString(), EASYHTTPCPP_FILE_PERMISSION_FULL_ACCESS);
+                TestFileUtil::changeAccessPermission(path, EASYHTTPCPP_FILE_PERMISSION_FULL_ACCESS);
             } else {
                 //change to --x
-                TestFileUtil::changeAccessPermission(path.toString(), EASYHTTPCPP_FILE_PERMISSION_ALLUSER_EXECUTE_ONLY);
+                TestFileUtil::changeAccessPermission(path, EASYHTTPCPP_FILE_PERMISSION_ALLUSER_EXECUTE_ONLY);
             }
         }
     }
@@ -417,6 +418,7 @@ static const MoveFileTestParam MoveFileTestParams[] = {
     {SourceFileDepth2, DestFileDepth0, true},
     {SourceFileDepth2, DestFileDepth2, true},
     {SourceFileDepth0, SourceFileDepth0, true},
+    {SourceFileNotExists, DestFileDepth0, false},
 };
 
 class FileUtilMoveFileParameterizedTest : public FileUtilUnitTest,

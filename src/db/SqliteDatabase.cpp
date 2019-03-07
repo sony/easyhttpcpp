@@ -3,6 +3,7 @@
  */
 
 #include "Poco/Any.h"
+#include "Poco/Data/SQLite/SQLiteException.h"
 #include "Poco/Delegate.h"
 #include "Poco/Exception.h"
 #include "Poco/SharedPtr.h"
@@ -18,10 +19,24 @@
 
 using easyhttpcpp::common::StringUtil;
 
+namespace {
+
+const std::string Tag = "SqliteDatabase";
+
+void checkForDatabaseCorruption(const std::string& funcName, const Poco::Exception& exception) {
+    if (dynamic_cast<const Poco::Data::SQLite::CorruptImageException*> (&exception)) {
+        EASYHTTPCPP_LOG_W(Tag, "%s: Database got corrupted.", funcName.c_str());
+        EASYHTTPCPP_LOG_D(Tag, "%s: Database got corrupted. Details: %s", funcName.c_str(), exception.message().c_str());
+
+        throw easyhttpcpp::db::SqlDatabaseCorruptException(
+                "Database got corrupted. You might have to delete the database to recover.", exception);
+    }
+}
+
+} /* namespace */
+
 namespace easyhttpcpp {
 namespace db {
-
-static const std::string Tag = "SqliteDatabase";
 
 SqliteDatabase::SqliteDatabase(const std::string& path) : m_opened(false)
 {
@@ -42,11 +57,7 @@ SqliteDatabase::SqliteDatabase(const std::string& path) : m_opened(false)
 
 SqliteDatabase::~SqliteDatabase()
 {
-    if (m_pSession) {
-        // TODO session throws exception in destructor; nothrow delete flag??
-        m_pSession = NULL;
-    }
-    m_opened = false;
+    closeSqliteSession();
 }
 
 SqliteDatabase::Ptr SqliteDatabase::openOrCreateDatabase(const std::string& path)
@@ -57,12 +68,15 @@ SqliteDatabase::Ptr SqliteDatabase::openOrCreateDatabase(const std::string& path
 void SqliteDatabase::execSql(const std::string& sql)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
 
     try {
         Poco::Data::Statement statement(*m_pSession);
         statement << sql;
         statement.execute();
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "Failed to execute sql %s", e.message().c_str());
         throw SqlExecutionException("Failed to execute sql " + sql, e);
     }
@@ -82,14 +96,15 @@ SqliteCursor::Ptr SqliteDatabase::query(const std::string& table, const std::vec
 SqliteCursor::Ptr SqliteDatabase::rawQuery(const std::string& sql, const std::vector<std::string>* selectionArgs)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
 
     try {
         Poco::Data::Statement statement(*m_pSession);
         statement << sql;
 
         if (selectionArgs) {
-            int count = selectionArgs->size();
-            for (int index = 0; index < count; index++) {
+            size_t count = selectionArgs->size();
+            for (size_t index = 0; index < count; index++) {
                 std::string selection = selectionArgs->at(index);
                 statement, Poco::Data::Keywords::bind(selection);
             }
@@ -99,45 +114,44 @@ SqliteCursor::Ptr SqliteDatabase::rawQuery(const std::string& sql, const std::ve
 
         return new SqliteCursor(statement);
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "Failed to query %s", e.message().c_str());
         throw SqlExecutionException("query failed", e);
     }
 }
 
-SqliteDatabase::RowId SqliteDatabase::insert(const std::string& table, const ContentValues& values)
+void SqliteDatabase::insert(const std::string& table, const ContentValues& values)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
 
     try {
-        Poco::Data::SQLite::Notifier notifier(*m_pSession, Poco::Data::SQLite::Notifier::SQLITE_NOTIFY_UPDATE);
         std::string sql = SqliteQueryBuilder::buildInsertString(table, values, SqliteConflictAlgorithmNone);
         Poco::Data::Statement statement(*m_pSession);
         statement << sql;
         statement.execute();
-
-        Poco::Int64 rowId = notifier.getRow();
-        return rowId;
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "insert failed %s", e.message().c_str());
         throw SqlExecutionException("Failed to insert", e);
     }
 }
 
-SqliteDatabase::RowId SqliteDatabase::replace(const std::string& table, const ContentValues& initialValues)
+void SqliteDatabase::replace(const std::string& table, const ContentValues& initialValues)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
 
     try {
-        Poco::Data::SQLite::Notifier notifier(*m_pSession, Poco::Data::SQLite::Notifier::SQLITE_NOTIFY_UPDATE);
-
         std::string sql = SqliteQueryBuilder::buildInsertString(table, initialValues, SqliteConflictAlgorithmReplace);
         Poco::Data::Statement statement(*m_pSession);
         statement << sql;
         statement.execute();
-
-        Poco::Int64 rowId = notifier.getRow();
-        return rowId;
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "replace failed %s", e.message().c_str());
         throw SqlExecutionException("Failed to replace", e);
     }
@@ -147,14 +161,16 @@ size_t SqliteDatabase::deleteRows(const std::string& table, const std::string* w
         const std::vector<std::string>* whereArgs)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
+
     try {
         std::string sql = SqliteQueryBuilder::buildDeleteString(table, whereClause);
         Poco::Data::Statement statement(*m_pSession);
         statement << sql;
 
         if (whereArgs) {
-            int count = whereArgs->size();
-            for (int index = 0; index < count; index++) {
+            size_t count = whereArgs->size();
+            for (size_t index = 0; index < count; index++) {
                 std::string where = whereArgs->at(index);
                 statement, Poco::Data::Keywords::bind(where);
             }
@@ -162,6 +178,8 @@ size_t SqliteDatabase::deleteRows(const std::string& table, const std::string* w
 
         return statement.execute();
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "delete failed %s", e.message().c_str());
         throw SqlExecutionException("Failed to delete", e);
     }
@@ -171,6 +189,8 @@ size_t SqliteDatabase::update(const std::string& table, const ContentValues& val
         const std::string* whereClause, const std::vector<std::string>* whereArgs)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+    throwExceptionIfIllegalState();
+
     try {
         // validity check of values is performed in SqliteQueryBuilder::buildUpdateString
 
@@ -180,8 +200,8 @@ size_t SqliteDatabase::update(const std::string& table, const ContentValues& val
         statement << sql;
 
         if (whereArgs) {
-            int count = whereArgs->size();
-            for (int index = 0; index < count; index++) {
+            size_t count = whereArgs->size();
+            for (size_t index = 0; index < count; index++) {
                 std::string where = whereArgs->at(index);
                 statement, Poco::Data::Keywords::bind(where);
             }
@@ -189,6 +209,8 @@ size_t SqliteDatabase::update(const std::string& table, const ContentValues& val
 
         return statement.execute();
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "update failed %s", e.message().c_str());
         throw SqlExecutionException("Failed to update", e);
     }
@@ -207,12 +229,24 @@ void SqliteDatabase::close()
     m_opened = false;
 }
 
+void SqliteDatabase::closeSqliteSession()
+{
+    if (!m_pSession) {
+        return;
+    }
+    m_pSession->close();
+    m_pSession = NULL;
+}
+
 void SqliteDatabase::beginTransaction()
 {
+    Poco::FastMutex::ScopedLock lock(m_mutex);
     throwExceptionIfIllegalState();
     try {
         m_pSession->begin();
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in beginTransaction %s", e.message().c_str());
         throw SqlIllegalStateException("Can't begin transaction", e);
     }
@@ -220,12 +254,15 @@ void SqliteDatabase::beginTransaction()
 
 void SqliteDatabase::endTransaction()
 {
+    Poco::FastMutex::ScopedLock lock(m_mutex);
     throwExceptionIfIllegalState();
     try {
         if (m_pSession->isTransaction()) {
             m_pSession->rollback();
         }
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in endTransaction %s", e.message().c_str());
         throw SqlIllegalStateException("Can't end transaction", e);
     }
@@ -233,10 +270,13 @@ void SqliteDatabase::endTransaction()
 
 void SqliteDatabase::setTransactionSuccessful()
 {
+    Poco::FastMutex::ScopedLock lock(m_mutex);
     throwExceptionIfIllegalState();
     try {
         m_pSession->commit();
     } catch (const Poco::Exception& e) {
+        checkForDatabaseCorruption(__func__, e);
+
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in setTransactionSuccessful %s", e.message().c_str());
         throw SqlIllegalStateException("Can't set transaction successful", e);
     }
@@ -244,23 +284,25 @@ void SqliteDatabase::setTransactionSuccessful()
 
 unsigned int SqliteDatabase::getVersion()
 {
-    throwExceptionIfIllegalState();
     std::string sql = "PRAGMA user_version;";
 
     SqliteCursor::Ptr pCursor = rawQuery(sql, NULL);
-    return pCursor->getInt(0);
+    int version = pCursor->getInt(0);
+    if (version < 0) {
+        EASYHTTPCPP_LOG_W(Tag, "The value of version is negative.");
+        return 0;
+    }
+    return static_cast<unsigned int>(version);
 }
 
 void SqliteDatabase::setVersion(unsigned int version)
 {
-    throwExceptionIfIllegalState();
     std::string sql = StringUtil::format("PRAGMA user_version = %d;", version);
     execSql(sql);
 }
 
 SqliteDatabase::AutoVacuum SqliteDatabase::getAutoVacuum()
 {
-    throwExceptionIfIllegalState();
     std::string sql = "PRAGMA auto_vacuum;";
 
     SqliteCursor::Ptr pCursor = rawQuery(sql, NULL);
@@ -269,7 +311,6 @@ SqliteDatabase::AutoVacuum SqliteDatabase::getAutoVacuum()
 
 void SqliteDatabase::setAutoVacuum(AutoVacuum autoVacuum)
 {
-    throwExceptionIfIllegalState();
     std::string sql = StringUtil::format("PRAGMA auto_vacuum = %d;", autoVacuum);
     execSql(sql);
 }
@@ -299,5 +340,6 @@ void SqliteDatabase::throwExceptionIfIllegalState()
         throw SqlIllegalStateException("SqliteDatabase Session is not created");
     }
 }
+
 } /* namespace db */
 } /* namespace easyhttpcpp */

@@ -10,6 +10,7 @@
 
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
+#include "easyhttpcpp/ResponseCallback.h"
 
 namespace easyhttpcpp {
 
@@ -28,7 +29,7 @@ public:
     }
 
     /**
-     * @brief Execute Http Request.
+     * @brief Execute Http Request synchronously.
      * 
      * Invokes the request immediately, and blocks until the response can be processed or is in error.
      * @return Response
@@ -41,10 +42,26 @@ public:
     virtual Response::Ptr execute() = 0;
 
     /**
+     * @brief Execute Http Request asynchronously.
+     * 
+     * This method returns as soon as it accepts the request.
+     * The request is executed asynchronously, and when response is received, callback is invoked.
+     * @param pResponseCallback
+     * @exception HttpIllegalStateException
+     * @exception HttpIllegalArgumentException
+     */
+    virtual void executeAsync(ResponseCallback::Ptr pResponseCallback) = 0;
+
+    /**
      * @brief Returns true if this call has been either executed.
      * @return true if already executed.
+     * @deprecated
      */
-    virtual bool isExecuted() const = 0;
+#ifdef _WIN32
+    _declspec(deprecated) virtual bool isExecuted() const = 0;
+#else
+    __attribute__ ((deprecated)) virtual bool isExecuted() const = 0;
+#endif
 
     /**
      * @brief Get Request.

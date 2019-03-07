@@ -8,6 +8,7 @@
 #include "easyhttpcpp/common/Cache.h"
 #include "easyhttpcpp/EasyHttp.h"
 #include "easyhttpcpp/Interceptor.h"
+#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 #include "EasyHttpCppAssertions.h"
 #include "MockInterceptor.h"
@@ -88,6 +89,53 @@ TEST(EasyHttpInternalUnitTest, newCall_ThrowsHttpIllegalArgumentException_WhenRe
     // When: call newCall()
     // Then: throw exception
     EASYHTTPCPP_EXPECT_THROW(pEasyHttpInternal->newCall(NULL), HttpIllegalArgumentException, 100700);
+}
+
+TEST(EasyHttpInternalUnitTest, getCorePoolSizeOfAsyncThreadPool_ReturnsCorePoolSizeOfAsyncThreadPool_whenSetItByBuilder)
+{
+    // Given: set core pool size by builder.
+    EasyHttp::Builder builder;
+    EasyHttp::Ptr pEasyHttpInternal = builder.setCorePoolSizeOfAsyncThreadPool(4).build();
+
+    // When: getCorePoolSizeOfAsyncThreadPool
+    // Then: get core pool size
+    EXPECT_EQ(4, pEasyHttpInternal->getCorePoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpInternalUnitTest, getCorePoolSizeOfAsyncThreadPool_ReturnsTwo_whenNotSetItByBuilder)
+{
+    // Given: not set core pool size by builder.
+    EasyHttp::Builder builder;
+    EasyHttp::Ptr pEasyHttpInternal = builder.build();
+
+    // When: getCorePoolSizeOfAsyncThreadPool
+    // Then: get default value
+    EXPECT_EQ(HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool,
+            pEasyHttpInternal->getCorePoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpInternalUnitTest,
+        getMaximumPoolSizeOfAsyncThreadPool_ReturnsMaximumPoolSizeOfAsyncThreadPool_whenSetItByBuilder)
+{
+    // Given: set core pool size by builder.
+    EasyHttp::Builder builder;
+    EasyHttp::Ptr pEasyHttpInternal = builder.setMaximumPoolSizeOfAsyncThreadPool(10).build();
+
+    // When: getMaximumPoolSizeOfAsyncThreadPool
+    // Then: get max pool size
+    EXPECT_EQ(10, pEasyHttpInternal->getMaximumPoolSizeOfAsyncThreadPool());
+}
+
+TEST(EasyHttpInternalUnitTest, getMaximumPoolSizeOfAsyncThreadPool_ReturnsFive_whenNotSetItByBuilder)
+{
+    // Given: not set max pool size by builder.
+    EasyHttp::Builder builder;
+    EasyHttp::Ptr pEasyHttpInternal = builder.build();
+
+    // When: getMaximumPoolSizeOfAsyncThreadPool
+    // Then: get default value
+    EXPECT_EQ(HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool,
+            pEasyHttpInternal->getMaximumPoolSizeOfAsyncThreadPool());
 }
 
 } /* namespace test */

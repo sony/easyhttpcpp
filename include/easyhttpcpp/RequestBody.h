@@ -7,11 +7,19 @@
 
 #include <ostream>
 
+#ifdef _WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include "Poco/AutoPtr.h"
 #include "Poco/Buffer.h"
 #include "Poco/RefCountedObject.h"
+#include "Poco/SharedPtr.h"
 
 #include "easyhttpcpp/common/ByteArrayBuffer.h"
+#include "easyhttpcpp/common/CommonMacros.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/MediaType.h"
 
 namespace easyhttpcpp {
@@ -19,7 +27,7 @@ namespace easyhttpcpp {
 /**
  * @brief A RequestBody preserve Http request body.
  */
-class RequestBody : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API RequestBody : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<RequestBody> Ptr;
 
@@ -33,25 +41,58 @@ public:
      * @param pMediaType MediaType
      * @param content request body stream
      * @return RequestBody
+     * @exception HttpIllegalArgumentException
      */
-    static Ptr create(MediaType::Ptr pMediaType, std::istream& content);
+    static Ptr create(MediaType::Ptr pMediaType, Poco::SharedPtr<std::istream> pContent);
 
     /**
      * @brief Create RequestBody by string
      * @param pMediaType MediaType
      * @param content request body string
      * @return RequestBody
+     * @exception HttpIllegalArgumentException
      */
-    static Ptr create(MediaType::Ptr pMediaType, const std::string& content);
+    static Ptr create(MediaType::Ptr pMediaType, Poco::SharedPtr<std::string> pContent);
 
     /**
-     * @brief Create RequestBody by BYteArrsyBuffer
+     * @brief Create RequestBody by ByteArrayBuffer
      * @param pMediaType MediaType
      * @param content request body buffer
      * @return RequestBody
      * @exception HttpIllegalArgumentException
      */
-    static Ptr create(MediaType::Ptr pMediaType, const easyhttpcpp::common::ByteArrayBuffer& content);
+    static Ptr create(MediaType::Ptr pMediaType, Poco::SharedPtr<easyhttpcpp::common::ByteArrayBuffer> pContent);
+
+    /**
+     * @brief Create RequestBody by stream
+     * @param pMediaType MediaType
+     * @param content request body stream
+     * @return RequestBody
+     * @deprecated Please use #create(MediaType::Ptr, Poco::SharedPtr<std::istream>) instead.
+     */
+    EASYHTTPCPP_DEPRECATED("please use create(MediaType::Ptr, Poco::SharedPtr<std::istream>)")
+        static Ptr create(MediaType::Ptr pMediaType, std::istream& content);
+
+    /**
+     * @brief Create RequestBody by string
+     * @param pMediaType MediaType
+     * @param content request body string
+     * @return RequestBody
+     * @deprecated Please use #create(MediaType::Ptr, Poco::SharedPtr<std::string>) instead.
+     */
+    EASYHTTPCPP_DEPRECATED("please use create(MediaType::Ptr, Poco::SharedPtr<std::string>)")
+        static Ptr create(MediaType::Ptr pMediaType, const std::string& content);
+
+    /**
+     * @brief Create RequestBody by ByteArrayBuffer
+     * @param pMediaType MediaType
+     * @param content request body buffer
+     * @return RequestBody
+     * @exception HttpIllegalArgumentException
+     * @deprecated Please use #create(MediaType::Ptr, Poco::SharedPtr<easyhttpcpp::common::ByteArrayBuffer>) instead.
+     */
+    EASYHTTPCPP_DEPRECATED("please use create(MediaType::Ptr, Poco::SharedPtr<easyhttpcpp::common::ByteArrayBuffer>)")
+        static Ptr create(MediaType::Ptr pMediaType, const easyhttpcpp::common::ByteArrayBuffer& content);
 
     /**
      * @brief Get MethiaType
@@ -85,9 +126,11 @@ public:
     virtual bool reset() = 0;
 
 protected:
-    virtual void setMediaType(MediaType::Ptr pMediaType);
+    RequestBody(MediaType::Ptr pMediaType);
 
 private:
+    RequestBody();
+
     MediaType::Ptr m_pMediaType;
 };
 

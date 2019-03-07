@@ -12,11 +12,13 @@
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/HttpException.h"
 #include "EasyHttpCppAssertions.h"
+#include "TestFileUtil.h"
 
 #include "HttpCacheInternal.h"
 
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
+using easyhttpcpp::testutil::TestFileUtil;
 
 namespace easyhttpcpp {
 namespace test {
@@ -124,11 +126,12 @@ TEST_F(HttpCacheInternalUnitTest, getTempDirectory_ThrowsException_WhenIOErrorOc
     Poco::Path parentPath = actualTmpPath.parent();
     Poco::File parentDir(parentPath);
     parentDir.createDirectories();
-    parentDir.setReadOnly(true);
+    TestFileUtil::changeAccessPermission(parentPath, EASYHTTPCPP_FILE_PERMISSION_ALLUSER_READ_ONLY);
 
     // When: call tempDirectory
     // Then: throw exception
-    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(httpCache.getTempDirectory(), HttpExecutionException, 100702);
+    EASYHTTPCPP_EXPECT_THROW(httpCache.getTempDirectory(), HttpExecutionException, 100702);
+    TestFileUtil::changeAccessPermission(parentPath, EASYHTTPCPP_FILE_PERMISSION_FULL_ACCESS);
 }
 
 // getCacheManager

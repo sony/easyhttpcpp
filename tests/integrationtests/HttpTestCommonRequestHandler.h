@@ -45,10 +45,14 @@ public:
 
     class WaitRequestHandler : public HttpTestBaseRequestHandler {
     public:
+        typedef Poco::AutoPtr<WaitRequestHandler> Ptr;
+
         ~WaitRequestHandler();
         virtual void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response);
         void set();
+        bool waitForStart(long timeoutMilliSec);
     private:
+        Poco::Event m_startEvent;
         Poco::Event m_waitEvent;
     };
 

@@ -282,7 +282,7 @@ Response::Ptr HttpEngine::sendRequestAndReceiveResponseWithRetryByConnection(Req
                                 "sendRequestAndReceiveResponseWithRetryByConnection: can not reset request body. [%s]",
                                 e.getMessage().c_str());
                         throw HttpConnectionRetryException(
-                                "request body does not support retry. please rebuild request body.", e);
+                                "Request body does not support retry. please rebuild request body.", e);
                     }
                     pConnectionInternal->setConnectionStatusListener(NULL);
                     forceToCreateConnection = true;
@@ -319,7 +319,7 @@ Response::Ptr HttpEngine::sendRequestAndReceiveResponse(Request::Ptr pNetworkReq
         Poco::FastMutex::ScopedLock lock(m_connectionMutex);
         if (m_cancelled) {
             EASYHTTPCPP_LOG_D(Tag, "sendRequestAndReceiveResponse: request is cancelled before create Connection.");
-            throw HttpExecutionException("http request is cancelled.");
+            throw HttpExecutionException("Http request is cancelled.");
         }
     }
 
@@ -337,7 +337,7 @@ Response::Ptr HttpEngine::sendRequestAndReceiveResponse(Request::Ptr pNetworkReq
         EASYHTTPCPP_LOG_D(Tag, "sendRequestAndReceiveResponse: url is not valid. [%s] Poco::Exception=[%s]",
                 pNetworkRequest->getUrl().c_str(), e.message().c_str());
         throw HttpExecutionException(StringUtil::format(
-                "url is not valid. [%s] message=[%s]", pNetworkRequest->getUrl().c_str(), e.message().c_str()), e);
+                "Url is not valid. [%s] message=[%s]", pNetworkRequest->getUrl().c_str(), e.message().c_str()), e);
     }
 
     // get connection.
@@ -366,6 +366,15 @@ Response::Ptr HttpEngine::sendRequestAndReceiveResponse(Request::Ptr pNetworkReq
 
     // sendRequest
     sendRequest(pPocoHttpClientSession, pNetworkRequest, uri, sentRequestTime);
+
+    {
+        Poco::FastMutex::ScopedLock lock(m_connectionMutex);
+        // Cancel check after connect.
+        if (m_cancelled) {
+            EASYHTTPCPP_LOG_D(Tag, "sendRequestAndReceiveResponse: request is cancelled after connect.");
+            throw HttpExecutionException("Http request is cancelled.");
+        }
+    }
 
     // receiveResponse
     return receiveResponse(pPocoHttpClientSession, pNetworkRequest, uri, sentRequestTime);
@@ -429,7 +438,7 @@ void HttpEngine::sendRequest(PocoHttpClientSessionPtr pPocoHttpClientSession, Re
     } catch (const Poco::TimeoutException& e) {
         EASYHTTPCPP_LOG_D(Tag, "sendRequest: sendRequest has timeout [scheme=%s, host=%s] message=[%s]",
                 uri.getScheme().c_str(), uri.getHost().c_str(), e.message().c_str());
-        throw HttpTimeoutException(StringUtil::format("sendRequest has timeout. [scheme=%s, host=%s] message=[%s]",
+        throw HttpTimeoutException(StringUtil::format("Sending request timed out. [scheme=%s, host=%s] message=[%s]",
                 uri.getScheme().c_str(), uri.getHost().c_str(), e.message().c_str()), e);
     } catch (const Poco::Net::SSLException& e) {
         EASYHTTPCPP_LOG_D(Tag,
@@ -504,7 +513,7 @@ Response::Ptr HttpEngine::receiveResponse(PocoHttpClientSessionPtr pPocoHttpClie
     } catch (const Poco::TimeoutException& e) {
         EASYHTTPCPP_LOG_D(Tag, "receiveResponse: receiveResponse has timeout [scheme=%s, host=%s] message=[%s]",
                 uri.getScheme().c_str(), uri.getHost().c_str(), e.message().c_str());
-        throw HttpTimeoutException(StringUtil::format("receiveResponse has timeout. [scheme=%s, host=%s] message=[%s]",
+        throw HttpTimeoutException(StringUtil::format("Receiving response timed out. [scheme=%s, host=%s] message=[%s]",
                 uri.getScheme().c_str(), uri.getHost().c_str(), e.message().c_str()), e);
     } catch (const Poco::Net::SSLException& e) {
         EASYHTTPCPP_LOG_D(Tag,

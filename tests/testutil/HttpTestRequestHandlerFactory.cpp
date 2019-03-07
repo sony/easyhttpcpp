@@ -91,11 +91,7 @@ void HttpTestRequestHandlerFactory::RequestHandlerWorker::handleRequest(Poco::Ne
     if (m_pTarget != NULL) {
         m_pTarget->handleRequest(request, response);
     } else {
-        EASYHTTPCPP_LOG_D(Tag, "request:");
-        std::ostringstream requestStream;
-        request.write(requestStream);
-        std::string request = requestStream.str();
-        EASYHTTPCPP_LOG_D(Tag, "%s", request.c_str());
+        EASYHTTPCPP_LOG_D(Tag, "Unhandled request was found.");
 
         response.setStatus(Poco::Net::HTTPResponse::HTTP_NOT_FOUND);
         response.setReason(Poco::Net::HTTPResponse::HTTP_REASON_NOT_FOUND);

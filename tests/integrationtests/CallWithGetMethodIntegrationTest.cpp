@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2017 Sony Corporation
  */
 
@@ -34,6 +34,7 @@
 #include "HttpTestBaseRequestHandler.h"
 #include "HttpTestCommonRequestHandler.h"
 #include "HttpTestConstants.h"
+#include "HttpTestResponseCallback.h"
 #include "HttpTestUtil.h"
 
 using easyhttpcpp::testutil::HttpTestServer;
@@ -449,6 +450,31 @@ TEST_F(CallWithGetMethodIntegrationTest, execute_ThrowsHttpIllegalStateException
 
     // When: execute 2 times.
     // Then: throw exception
+    EASYHTTPCPP_EXPECT_THROW(pCall->execute(), HttpIllegalStateException, 100701);
+}
+
+TEST_F(CallWithGetMethodIntegrationTest, execute_ThrowsHttpIllegalStateException_WhenCalledAfterExecuteAsync)
+{
+    HttpTestServer testServer;
+    HttpTestCommonRequestHandler::OkRequestHandler handler;
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    EasyHttp::Builder httpClientBuilder;
+    EasyHttp::Ptr pHttpClient = httpClientBuilder.build();
+    Request::Builder requestBuilder;
+    std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
+    Request::Ptr pRequest = requestBuilder.setUrl(url).httpGet().build();
+    Call::Ptr pCall = pHttpClient->newCall(pRequest);
+
+    // Given: call executeAsync method.
+    HttpTestResponseCallback::Ptr pCallback1 = new HttpTestResponseCallback();
+    pCall->executeAsync(pCallback1);
+    EXPECT_TRUE(pCallback1->waitCompletion());
+    EXPECT_TRUE(pCallback1->getWhat().isNull());
+
+    // When: execute.
+    // Then: throws HttpIllegalStateException
     EASYHTTPCPP_EXPECT_THROW(pCall->execute(), HttpIllegalStateException, 100701);
 }
 

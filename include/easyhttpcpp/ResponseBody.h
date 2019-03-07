@@ -5,9 +5,15 @@
 #ifndef EASYHTTPCPP_RESPONSEBODY_H_INCLUDED
 #define EASYHTTPCPP_RESPONSEBODY_H_INCLUDED
 
+#ifdef _WIN32
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/MediaType.h"
 #include "easyhttpcpp/ResponseBodyStream.h"
 
@@ -16,7 +22,7 @@ namespace easyhttpcpp {
 /**
  * @brief A ResponseBody preserve Http response body.
  */
-class ResponseBody : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API ResponseBody : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<ResponseBody> Ptr;
 

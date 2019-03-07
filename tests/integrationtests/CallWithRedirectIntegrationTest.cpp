@@ -14,7 +14,6 @@
 #include "Poco/Net/HTTPServerResponse.h"
 
 #include "easyhttpcpp/common/CommonMacros.h"
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/EasyHttp.h"
@@ -28,11 +27,13 @@
 #include "HttpTestServer.h"
 #include "HttpsTestServer.h"
 #include "MockInterceptor.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
 #include "HttpTestCommonRequestHandler.h"
 #include "HttpTestConstants.h"
+#include "HttpTestResponseCallback.h"
 #include "HttpTestUtil.h"
 #include "HttpUtil.h"
 
@@ -63,6 +64,8 @@ protected:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -101,7 +104,7 @@ bool isFirstReDirectUrl(Interceptor::Chain& chain)
 {
     Request::Ptr pRequest = chain.getRequest();
     std::string url = pRequest->getUrl();
-    EASYHTTPCPP_LOG_D(Tag, "isFirstReDirectUrl: url=%s", url.c_str());
+    EASYHTTPCPP_TESTLOG_I(Tag, "isFirstReDirectUrl: url=%s", url.c_str());
     return (url == getRedirectFirstUrl());
 }
 
@@ -109,7 +112,7 @@ bool isFirstReDirectUrlWithoutQuery(Interceptor::Chain& chain)
 {
     Request::Ptr pRequest = chain.getRequest();
     std::string url = pRequest->getUrl();
-    EASYHTTPCPP_LOG_D(Tag, "isFirstReDirectUrlWithoutQuery: url=%s", url.c_str());
+    EASYHTTPCPP_TESTLOG_I(Tag, "isFirstReDirectUrlWithoutQuery: url=%s", url.c_str());
     return (url == getRedirectFirstUrlWithoutQuery());
 }
 
@@ -117,7 +120,7 @@ bool isSecondReDirectUrl(Interceptor::Chain& chain)
 {
     Request::Ptr pRequest = chain.getRequest();
     std::string url = pRequest->getUrl();
-    EASYHTTPCPP_LOG_D(Tag, "isSecondReDirectUrl: url=%s", url.c_str());
+    EASYHTTPCPP_TESTLOG_I(Tag, "isSecondReDirectUrl: url=%s", url.c_str());
     return (url == getRedirectSecondUrl());
 }
 
@@ -542,6 +545,90 @@ TEST_F(CallWithRedirectIntegrationTest,
     EXPECT_EQ(RedirectResponseBody, responseBody);
 }
 
+// executeAsync
+// 307:Temporary Redirect の場合、redirect を行う。
+// retry する。
+// PriorResponse にredirect 前のresponse が格納される。
+TEST_F(CallWithRedirectIntegrationTest,
+        executeAsync_CallsOnResponseWithRedirectedResponse_WhenGetMethodAndHttpStatusCodeIsTemporaryRedirect)
+{
+    // Given: set redirect handler (1st is redirect, 2nd is not redirect)
+    HttpTestServer testServer;
+    RedirectRequestHandler redirectFirstHandler;
+    HttpTestCommonRequestHandler::OkRequestHandler redirectSecondHandler;
+    testServer.getTestRequestHandlerFactory().addHandler(RedirectPath, &redirectFirstHandler);
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &redirectSecondHandler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    testing::InSequence seq;
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())),
+            intercept(testing::Truly(isFirstReDirectUrl))).WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())),
+            intercept(testing::Truly(isSecondReDirectUrl))).WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
+
+    EasyHttp::Builder httpClientBuilder;
+    EasyHttp::Ptr pHttpClient = httpClientBuilder.addNetworkInterceptor(pMockNetworkInterceptor).build();
+    Request::Builder requestBuilder;
+    std::string url = getRedirectFirstUrl();
+    Request::Ptr pRequest = requestBuilder.setUrl(url).build();
+    Call::Ptr pCall = pHttpClient->newCall(pRequest);
+
+    // When: executeAsync
+    HttpTestResponseCallback::Ptr pCallback = new HttpTestResponseCallback();
+    pCall->executeAsync(pCallback);
+
+    // Then: onResponse is called after redirect.
+    EXPECT_TRUE(pCallback->waitCompletion());
+    EXPECT_TRUE(pCallback->getWhat().isNull());
+    Response::Ptr pResponse = pCallback->getResponse();
+    ASSERT_FALSE(pResponse.isNull());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse->getCode());
+    Response::Ptr pPriorResponse = pResponse->getPriorResponse();
+    ASSERT_FALSE(pPriorResponse.isNull());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT, pPriorResponse->getCode());
+    EXPECT_EQ(url, pPriorResponse->getRequest()->getUrl());
+    EXPECT_TRUE(pPriorResponse->getBody().isNull());
+
+    // check response body
+    std::string responseBody = pResponse->getBody()->toString();
+    EXPECT_EQ(HttpTestConstants::DefaultResponseBody, responseBody);
+}
+
+// executeAsync
+// 6回 redirect する。
+// 5回 retry し、HttpExecutionException が OnFailire に渡される。
+TEST_F(CallWithRedirectIntegrationTest, executeAsync_CallsOnFailureWithHttpExecutionException_WhenGetMethodAndRedirect6Times)
+{
+    // Given: setup infinity redirect.
+    HttpTestServer testServer;
+    SameRedirectRequestHandler handler;
+    testServer.getTestRequestHandlerFactory().addHandler(RedirectPath, &handler);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())),
+            intercept(testing::Truly(isFirstReDirectUrl))).
+            Times(6).WillRepeatedly(testing::Invoke(delegateProceedOnlyIntercept)); // retry 5 times is repeat 6 times.
+
+    EasyHttp::Builder httpClientBuilder;
+    EasyHttp::Ptr pHttpClient = httpClientBuilder.addNetworkInterceptor(pMockNetworkInterceptor).build();
+    Request::Builder requestBuilder;
+    std::string url = getRedirectFirstUrl();
+    Request::Ptr pRequest = requestBuilder.setUrl(url).build();
+    Call::Ptr pCall = pHttpClient->newCall(pRequest);
+
+    // When: executeAsync.
+    HttpTestResponseCallback::Ptr pCallback = new HttpTestResponseCallback();
+    pCall->executeAsync(pCallback);
+
+    // Then: onResponse is called after redirect.
+    EXPECT_TRUE(pCallback->waitCompletion());
+    EXPECT_TRUE(pCallback->getResponse().isNull());
+    HttpException::Ptr pWhat = pCallback->getWhat();
+    ASSERT_FALSE(pWhat.isNull());
+    EXPECT_TRUE(dynamic_cast<HttpExecutionException*> (pWhat.get()) != NULL);
+}
 
 } /* namespace test */
 } /* namespace easyhttpcpp */

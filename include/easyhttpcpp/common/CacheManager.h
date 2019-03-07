@@ -17,11 +17,12 @@
 #include "easyhttpcpp/common/ByteArrayBuffer.h"
 #include "easyhttpcpp/common/Cache.h"
 #include "easyhttpcpp/common/CacheMetadata.h"
+#include "easyhttpcpp/common/CommonExports.h"
 
 namespace easyhttpcpp {
 namespace common {
 
-class CacheManager : public Poco::RefCountedObject {
+class EASYHTTPCPP_COMMON_API CacheManager : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<CacheManager> Ptr;
 

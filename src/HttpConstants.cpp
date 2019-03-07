@@ -61,5 +61,8 @@ const char* const HttpConstants::Database::FileName = "cache_metadata.db";
 const char* const HttpConstants::Database::TableName = "cache_metadata";
 const unsigned int HttpConstants::Database::Version = 1;
 
+const unsigned int HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool = 2;
+const unsigned int HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool = 5;
+
 
 } /* namespace easyhttpcpp */

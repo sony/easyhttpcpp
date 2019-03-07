@@ -9,12 +9,14 @@
 #include "Poco/ListMap.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
 /**
  * @brief A Headers collect request and response header.
  */
-class Headers : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API Headers : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<Headers> Ptr;
     typedef Poco::ListMap<std::string, std::string> HeaderMap;

@@ -380,7 +380,7 @@ bool SqliteCursor::move(int offset)
         EASYHTTPCPP_LOG_D(Tag, "move failed for invalid offset current row[%d] offset[%d]", m_currentRow, offset);
         return false;
     }
-    return moveToPosition(position);
+    return moveToPosition(static_cast<unsigned int>(position));
 }
 
 bool SqliteCursor::moveToFirst()

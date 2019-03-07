@@ -7,6 +7,7 @@
 #include "easyhttpcpp/EasyHttp.h"
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Call.h"
+#include "EasyHttpCppAssertions.h"
 
 namespace easyhttpcpp {
 namespace test {
@@ -60,6 +61,19 @@ TEST(CallInternalUnitTest, getRequest_ReturnsRequest_WhenRequestIsSpecifiedNewCa
 
     // Then: return Specified Request on newCall.
     EXPECT_EQ(pRequest, pGottenRequest);
+}
+
+TEST(CallIneternalUnitTest, executeAsync_ThrowsHttpIlleagalArgumentException_WhenResponseCallbackIsNull)
+{
+    EasyHttp::Builder httpClientBuilder;
+    EasyHttp::Ptr pHttpClient = httpClientBuilder.build();
+    Request::Builder requestBuilder;
+    Request::Ptr pRequest = requestBuilder.setUrl(RequestUrl).build();
+    Call::Ptr pCall = pHttpClient->newCall(pRequest);
+
+    // When: executeAsync with ResponseCallback as NULL.
+    // Then: throws HttpIllegalArgumentException.
+    EASYHTTPCPP_EXPECT_THROW(pCall->executeAsync(NULL), HttpIllegalArgumentException, 100700);
 }
 
 } /* namespace test */

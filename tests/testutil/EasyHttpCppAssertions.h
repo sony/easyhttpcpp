@@ -14,6 +14,8 @@
 namespace easyhttpcpp {
 namespace testutil {
 
+#define EASYHTTPCPP_IS_INSTANCE_OF(pObj, type) (!((pObj).cast<type>().isNull()))
+
 #define EASYHTTPCPP_EXPECT_THROW(statement, expectedException, expectedCode)                                            \
     try {                                                                                                       \
         statement;                                                                                              \

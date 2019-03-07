@@ -281,7 +281,8 @@ TEST(HttpEngineUnitTest, getRetryRequest_ReturnsNull_WhenPutMethodAndStatusCodeI
 {
     // Given: POST Method and statusCode == 307
     MediaType::Ptr pMediaType = new MediaType(DefaultContentType);
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
     Request::Builder requestBuilder;
     requestBuilder.httpPut(pRequestBody);
     Request::Ptr pRequest = requestBuilder.build();

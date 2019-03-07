@@ -33,6 +33,7 @@
 #include "MockInterceptor.h"
 #include "EasyHttpCppAssertions.h"
 #include "TestDefs.h"
+#include "TestLogger.h"
 #include "TimeInRangeMatcher.h"
 
 #include "HttpCacheDatabase.h"
@@ -73,6 +74,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 

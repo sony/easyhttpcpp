@@ -27,6 +27,7 @@ SqliteOpenHelper::~SqliteOpenHelper()
 {
     // FIXME where should I call this?
     //Poco::Data::SQLite::Connector::unregisterConnector();
+    closeSqliteSession();
 }
 
 const Poco::Path& SqliteOpenHelper::getDatabasePath() const
@@ -49,8 +50,23 @@ void SqliteOpenHelper::close()
         throw SqlIllegalStateException(msg);
     }
 
-    if (!m_database.isNull() && m_database->isOpen()) {
+    if (m_database && m_database->isOpen()) {
         m_database->close();
+        m_database = NULL;
+    }
+}
+
+void SqliteOpenHelper::closeSqliteSession() {
+    Poco::FastMutex::ScopedLock lock(m_mutex);
+
+    if (m_initializing) {
+        std::string msg = "Closed during initialization";
+        EASYHTTPCPP_LOG_D(Tag, msg.c_str());
+        throw SqlIllegalStateException(msg);
+    }
+
+    if (m_database) {
+        m_database->closeSqliteSession();
         m_database = NULL;
     }
 }
@@ -84,7 +100,7 @@ SqliteDatabase::Ptr SqliteOpenHelper::getDatabase()
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
 
-    if (!m_database.isNull()) {
+    if (m_database) {
         if (!m_database->isOpen()) {
             // Darn! The user closed the database by calling mDatabase.close().
             m_database = NULL;
@@ -104,7 +120,7 @@ SqliteDatabase::Ptr SqliteOpenHelper::getDatabase()
     try {
         m_initializing = true;
 
-        if (!db.isNull()) {
+        if (db) {
             db->reopen();
         } else {
             db = SqliteDatabase::openOrCreateDatabase(m_path.toString());
@@ -121,7 +137,7 @@ SqliteDatabase::Ptr SqliteOpenHelper::getDatabase()
                 db->setAutoVacuum(SqliteDatabase::AutoVacuumFull);
             } catch (const SqlException& e) {
                 // Even if the setting of AutoVacuum fails, the database can be used, so continue processing.
-                EASYHTTPCPP_LOG_I(Tag, "Failed to set auto-vacuum status to full.");
+                EASYHTTPCPP_LOG_W(Tag, "Failed to set auto-vacuum status to full.");
                 EASYHTTPCPP_LOG_D(Tag, "Failed to set auto-vacuum status to full. Details: %s", e.getMessage().c_str());
             }
         }

@@ -21,14 +21,14 @@ class TestServer {
 public:
     TestServer();
     virtual ~TestServer();
-    void start(unsigned int port);
+    void start(unsigned short port);
     void stop();
     HttpTestRequestHandlerFactory& getTestRequestHandlerFactory();
     void setKeepAlive(bool keepAlive);
     void setKeepAliveTimeoutSec(long keepAliveTimeoutSec);
 
 protected:
-    virtual Poco::Net::ServerSocket* newSocket(unsigned int port) = 0;
+    virtual Poco::Net::ServerSocket* newSocket(unsigned short port) = 0;
 
 private:
     Poco::Net::HTTPRequestHandlerFactory::Ptr m_pRequestHandlerFactory;

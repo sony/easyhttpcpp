@@ -10,6 +10,8 @@
 
 #include "Poco/SharedPtr.h"
 
+#include "easyhttpcpp/common/CommonExports.h"
+
 namespace easyhttpcpp {
 namespace common {
 
@@ -17,7 +19,7 @@ namespace common {
  * @interface BaseException BaseException.h
  * @brief Base exception class.
  */
-class BaseException : public std::exception {
+class EASYHTTPCPP_COMMON_API BaseException : public std::exception {
 public:
     typedef Poco::SharedPtr<BaseException> Ptr;
 
@@ -96,8 +98,8 @@ private:
  * @brief
  * Macros for quickly declaring and implementing exception classes.
  */
-#define EASYHTTPCPP_DECLARE_EXCEPTION_GROUP(CLS)                                                    \
-    class CLS : public easyhttpcpp::common::BaseException {                                \
+#define EASYHTTPCPP_DECLARE_EXCEPTION_GROUP(API, CLS)                                               \
+    class API CLS : public easyhttpcpp::common::BaseException {                            \
     public:                                                                                 \
         CLS(const std::string& message);                                                    \
         CLS(const std::string& message, const std::exception& cause);                       \
@@ -121,8 +123,8 @@ private:
         return GROUPCODE;                                                                               \
     }
 
-#define EASYHTTPCPP_DECLARE_EXCEPTION_SUB_GROUP(CLS, BASE)                                              \
-    class CLS : public BASE {                                                                   \
+#define EASYHTTPCPP_DECLARE_EXCEPTION_SUB_GROUP(API, CLS, BASE)                                         \
+    class API CLS : public BASE {                                                               \
     public:                                                                                     \
         CLS(const std::string& message);                                                        \
         CLS(const std::string& message, const std::exception& cause);                           \
@@ -145,8 +147,8 @@ private:
         return SUBGROUPCODE;                                                                            \
     }
 
-#define EASYHTTPCPP_DECLARE_EXCEPTION(CLS, BASE)                                                \
-    class CLS : public BASE {                                                           \
+#define EASYHTTPCPP_DECLARE_EXCEPTION(API, CLS, BASE)                                           \
+    class API CLS : public BASE {                                                       \
     public:                                                                             \
         CLS(const std::string& message);                                                \
         CLS(const std::string& message, const std::exception& cause);                   \

@@ -19,10 +19,10 @@ TEST(RequestBodyUnitTest, createWithIStream_ReturnsInstance)
 {
     // Given: none
     MediaType::Ptr pMediaType(new MediaType(ContentType));
-    std::istringstream is(Content);
+    Poco::SharedPtr<std::istream> pContent = new std::istringstream(Content);
 
     // When: call create()
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, is);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
 
     // Then: parameters are set from content
     EXPECT_FALSE(pRequestBody.isNull());
@@ -36,7 +36,8 @@ TEST(RequestBodyUnitTest, createWithString_ReturnsInstance)
     MediaType::Ptr pMediaType(new MediaType(ContentType));
 
     // When: call create()
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, Content);
+    Poco::SharedPtr<std::string> pContent = new std::string(Content);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
 
     // Then: parameters are set from content
     EXPECT_FALSE(pRequestBody.isNull());
@@ -48,11 +49,11 @@ TEST(RequestBodyUnitTest, createWithString_ReturnsInstance)
 TEST(RequestBodyUnitTest, createWithByteArrayBuffer_ReturnsInstance)
 {
     // Given: none
-    ByteArrayBuffer buffer(Content);
+    Poco::SharedPtr<ByteArrayBuffer> pBuffer = new ByteArrayBuffer(Content);
     MediaType::Ptr pMediaType(new MediaType(ContentType));
 
     // When: call create()
-    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, buffer);
+    RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pBuffer);
 
     // Then: parameters are set from content
     EXPECT_FALSE(pRequestBody.isNull());

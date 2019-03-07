@@ -29,7 +29,7 @@ TestServer::~TestServer()
     stop();
 }
 
-void TestServer::start(unsigned int port)
+void TestServer::start(unsigned short port)
 {
     int maxQueued = 100;
     int maxThreads = 16;

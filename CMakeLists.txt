@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 
+# Define Windows toolchain by default if not provided; must go before project definition
+if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  if (WIN32)
+    set(CMAKE_TOOLCHAIN_FILE "cmake/WindowsToolchain.cmake" CACHE PATH "Windows toolchain file")
+  endif ()
+endif ()
+
 project(easyhttpcpp)
 
 option(EASYHTTPCPP_VERBOSE_MESSAGES "Enable informational messages during configure" OFF)
@@ -9,7 +16,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Generate debug library name with a postfix.")
+if (WIN32)
+    if (NOT FORCE_SHAREDLIB)
+        set(STATIC_POSTFIX "md" CACHE STRING "Set static library postfix" FORCE)
+    else ()
+        set(STATIC_POSTFIX "" CACHE STRING "Set static library postfix" FORCE)
+    endif ()
+else ()
+    set(STATIC_POSTFIX "" CACHE STRING "Set static library postfix" FORCE)
+endif ()
+# For Debug build types, append a "d" to the library names.
+set(CMAKE_DEBUG_POSTFIX "${STATIC_POSTFIX}d" CACHE STRING "Set debug library postfix" FORCE)
 
 # set default build type to Release
 if (NOT CMAKE_BUILD_TYPE)
@@ -50,12 +67,38 @@ endif ()
 set(LIBRARY_TARGET_NAME "easyhttp")
 
 # dependent libraries
-find_package(OpenSSL REQUIRED)
-find_package(Poco REQUIRED Foundation Data DataSQLite Net NetSSL Crypto CONFIG)
+if (WIN32)
+    find_package(Poco REQUIRED Foundation Data DataSQLite Net NetSSLWin CONFIG)
+else ()
+    find_package(OpenSSL REQUIRED)
+    find_package(Poco REQUIRED Foundation Data DataSQLite Net NetSSL Crypto CONFIG)
+endif ()
 
 # sources
-file(GLOB_RECURSE SRCS_G "src/*.cpp")
-list(APPEND SRCS ${SRCS_G})
+if (WIN32)
+    set(PLATFORM_SPECIFIC_SRC_DIR_NAME "windows")
+else ()
+    # assume unix
+    set(PLATFORM_SPECIFIC_SRC_DIR_NAME "unix")
+endif ()
+
+file(GLOB COMMON_SRCS_G "src/common/*.cpp")
+file(GLOB COMMON_SRCS_PLAT_G "src/common/${PLATFORM_SPECIFIC_SRC_DIR_NAME}/*.cpp")
+file(GLOB DB_SRCS_G "src/db/*.cpp")
+file(GLOB DB_SRCS_PLAT_G "src/db/${PLATFORM_SPECIFIC_SRC_DIR_NAME}/*.cpp")
+file(GLOB MESSAGEDIGEST_SRCS_G "src/messagedigest/*.cpp")
+file(GLOB MESSAGEDIGEST_SRCS_PLAT_G "src/messagedigest/${PLATFORM_SPECIFIC_SRC_DIR_NAME}/*.cpp")
+file(GLOB EXECUTORSERVICE_SRCS_G "src/executorservice/*.cpp")
+file(GLOB EXECUTORSERVICE_SRCS_PLAT_G "src/executorservice/${PLATFORM_SPECIFIC_SRC_DIR_NAME}/*.cpp")
+file(GLOB HTTP_SRCS_G "src/*.cpp")
+file(GLOB HTTP_SRCS_PLAT_G "src/${PLATFORM_SPECIFIC_SRC_DIR_NAME}/*.cpp")
+list(APPEND SRCS
+	${COMMON_SRCS_G} ${COMMON_SRCS_PLAT_G} 
+	${DB_SRCS_G} ${DB_SRCS_PLAT_G}
+	${MESSAGEDIGEST_SRCS_G} ${MESSAGEDIGEST_SRCS_PLAT_G}
+	${EXECUTORSERVICE_SRCS_G} ${EXECUTORSERVICE_SRCS_PLAT_G}
+	${HTTP_SRCS_G} ${HTTP_SRCS_PLAT_G})
+
 file(GLOB_RECURSE HDRS_G "include/*.h")
 list(APPEND SRCS ${HDRS_G})
 
@@ -77,6 +120,11 @@ target_include_directories(${LIBRARY_TARGET_NAME}
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:include>
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+			   ${CMAKE_CURRENT_SOURCE_DIR}/src/${PLATFORM_SPECIFIC_SRC_DIR_NAME}
+			   ${CMAKE_CURRENT_SOURCE_DIR}/src/common/${PLATFORM_SPECIFIC_SRC_DIR_NAME}
+			   ${CMAKE_CURRENT_SOURCE_DIR}/src/db/${PLATFORM_SPECIFIC_SRC_DIR_NAME}
+			   ${CMAKE_CURRENT_SOURCE_DIR}/src/messagedigest/${PLATFORM_SPECIFIC_SRC_DIR_NAME}
+			   ${CMAKE_CURRENT_SOURCE_DIR}/src/executorservice/${PLATFORM_SPECIFIC_SRC_DIR_NAME}
                            )
 
 easyhttpcpp_install(${LIBRARY_TARGET_NAME})

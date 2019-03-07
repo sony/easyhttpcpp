@@ -7,18 +7,26 @@
 namespace easyhttpcpp {
 namespace common {
 
+bool CoreLogger::s_terminated = false;
+
 CoreLogger::CoreLogger()
 {
 }
 
 CoreLogger::~CoreLogger()
 {
+    s_terminated = true;
 }
 
-CoreLogger& CoreLogger::getInstance()
+CoreLogger* CoreLogger::getInstance()
 {
     static Poco::SingletonHolder<CoreLogger> s_singleton;
-    return *s_singleton.get();
+
+    if (s_terminated) {
+        return NULL;
+    } else {
+        return s_singleton.get();
+    }
 }
 
 } /* namespace common */

@@ -8,6 +8,12 @@
 
 #include "easyhttpcpp/common/StringUtil.h"
 
+#if defined(_WIN64)
+#define LONG_LONG_MIN _I64_MIN
+#elif defined(_WIN32)
+#define LONG_LONG_MIN LONG_MIN
+#endif
+
 namespace easyhttpcpp {
 namespace common {
 namespace test {
@@ -276,14 +282,14 @@ TEST_F(StringUtilTest, format_Succeeds_WhenFormatLongLong)
 {
     const char* format1 = "%lld";
     const char* format2 = "%llu";
-    long long message1 = LONG_LONG_MIN;
-    unsigned long long message2 = LONG_LONG_MIN;
+    long long message1 = -12345LL;
+    unsigned long long message2 = 12345ULL;
 
     std::string formatMessage1 = StringUtil::format(format1, message1);
     std::string formatMessage2 = StringUtil::format(format2, message2);
 
-    ASSERT_STREQ("-9223372036854775808", formatMessage1.c_str());
-    ASSERT_STREQ("9223372036854775808", formatMessage2.c_str());
+    ASSERT_STREQ("-12345", formatMessage1.c_str());
+    ASSERT_STREQ("12345", formatMessage2.c_str());
 }
 
 class IsNullOrEmptyTestParam {

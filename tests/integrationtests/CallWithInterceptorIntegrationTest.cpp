@@ -18,7 +18,6 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/EasyHttp.h"
@@ -31,6 +30,7 @@
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
 #include "EasyHttpCppAssertions.h"
+#include "TestLogger.h"
 
 #include "HttpIntegrationTestCase.h"
 #include "HttpTestBaseRequestHandler.h"
@@ -62,6 +62,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -82,7 +84,7 @@ bool isFirstReDirectUrl(Interceptor::Chain& chain)
 {
     Request::Ptr pRequest = chain.getRequest();
     std::string url = pRequest->getUrl();
-    EASYHTTPCPP_LOG_D(Tag, "IsFirstReDirectUrl: url=%s", url.c_str());
+    EASYHTTPCPP_TESTLOG_I(Tag, "IsFirstReDirectUrl: url=%s", url.c_str());
     return (url == getRedirectFirstUrl());
 }
 
@@ -123,7 +125,7 @@ Response::Ptr delegateProceedCheckGetRequest(Interceptor::Chain& chain)
     }
     std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
     if (pRequest->getUrl() != url) {
-        EASYHTTPCPP_LOG_E(Tag, "delegateProceedCheckGetRequest: url is wrong.[%s]",
+        EASYHTTPCPP_TESTLOG_E(Tag, "delegateProceedCheckGetRequest: url is wrong.[%s]",
                 pRequest->getUrl().c_str());
         Response::Builder builder;
         return builder.setCode(-1).build();

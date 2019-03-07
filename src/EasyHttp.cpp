@@ -6,6 +6,7 @@
 
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/EasyHttp.h"
+#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 
 #include "CallInternal.h"
@@ -25,7 +26,10 @@ EasyHttp::~EasyHttp()
 }
 
 EasyHttp::Builder::Builder() : m_timeoutSec(EasyHttpContext::DefaultTimeoutSec),
-        m_crlCheckPolicy(CrlCheckPolicyNoCheck)
+        m_crlCheckPolicy(CrlCheckPolicyNoCheck),
+        m_corePoolSizeOfAsyncThreadPool(HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool),
+        m_maximumPoolSizeOfAsyncThreadPool(HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool)
+
 {
 }
 
@@ -153,6 +157,29 @@ EasyHttp::Builder& EasyHttp::Builder::setConnectionPool(ConnectionPool::Ptr pCon
 ConnectionPool::Ptr EasyHttp::Builder::getConnectionPool() const
 {
     return m_pConnectionPool;
+}
+
+EasyHttp::Builder& EasyHttp::Builder::setCorePoolSizeOfAsyncThreadPool(unsigned int corePoolSizeOfAsyncThreadPool)
+{
+    m_corePoolSizeOfAsyncThreadPool = corePoolSizeOfAsyncThreadPool;
+    return *this;
+}
+
+unsigned int EasyHttp::Builder::getCorePoolSizeOfAsyncThreadPool() const
+{
+    return m_corePoolSizeOfAsyncThreadPool;
+}
+
+EasyHttp::Builder& EasyHttp::Builder::setMaximumPoolSizeOfAsyncThreadPool(
+        unsigned int maximumPoolSizeOfAsyncThreadPool)
+{
+    m_maximumPoolSizeOfAsyncThreadPool = maximumPoolSizeOfAsyncThreadPool;
+    return *this;
+}
+
+unsigned int EasyHttp::Builder::getMaximumPoolSizeOfAsyncThreadPool() const
+{
+    return m_maximumPoolSizeOfAsyncThreadPool;
 }
 
 } /* namespace easyhttpcpp */

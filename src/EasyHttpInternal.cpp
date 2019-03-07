@@ -3,7 +3,6 @@
  */
 
 #include "easyhttpcpp/common/CoreLogger.h"
-#include "easyhttpcpp/HttpException.h"
 
 #include "CallInternal.h"
 #include "EasyHttpInternal.h"
@@ -12,7 +11,7 @@ namespace easyhttpcpp {
 
 static const std::string Tag = "EasyHttpInternal";
 
-EasyHttpInternal::EasyHttpInternal(EasyHttp::Builder& builder)
+EasyHttpInternal::EasyHttpInternal(EasyHttp::Builder& builder) : m_invalidated(false)
 {
     m_pContext = new EasyHttpContext();
     m_pContext->setCache(builder.getCache());
@@ -24,14 +23,25 @@ EasyHttpInternal::EasyHttpInternal(EasyHttp::Builder& builder)
     m_pContext->setCallInterceptors(builder.getInterceptors());
     m_pContext->setNetworkInterceptors(builder.getNetworkInterceptors());
     m_pContext->setConnectionPool(builder.getConnectionPool());
+    m_corePoolSizeOfAsyncThreadPool = builder.getCorePoolSizeOfAsyncThreadPool();
+    m_maximumPoolSizeOfAsyncThreadPool = builder.getMaximumPoolSizeOfAsyncThreadPool();
+    m_pContext->setHttpExecutionTaskManager(new HttpExecutionTaskManager(m_corePoolSizeOfAsyncThreadPool,
+            m_maximumPoolSizeOfAsyncThreadPool));
 }
 
 EasyHttpInternal::~EasyHttpInternal()
 {
+    m_pContext->getHttpExecutionTaskManager()->gracefulShutdown();
 }
 
 Call::Ptr EasyHttpInternal::newCall(Request::Ptr pRequest)
 {
+    Poco::FastMutex::ScopedLock lock(m_instanceMutex);
+    if (m_invalidated) {
+        EASYHTTPCPP_LOG_D(Tag, "newCall: EasyHttp is already invalidated.");
+        throw HttpIllegalStateException("Need to instantiate EasyHttp object again before calling newCall.");
+    }
+
     if (!pRequest) {
         EASYHTTPCPP_LOG_D(Tag, "newCall: pRequest is NULL.");
         throw HttpIllegalArgumentException("newCall require Request.");
@@ -77,6 +87,30 @@ ConnectionPool::Ptr EasyHttpInternal::getConnectionPool() const
 EasyHttpContext::Ptr EasyHttpInternal::getHttpContenxt() const
 {
     return m_pContext;
+}
+
+unsigned int EasyHttpInternal::getCorePoolSizeOfAsyncThreadPool() const
+{
+    return m_corePoolSizeOfAsyncThreadPool;
+}
+
+unsigned int EasyHttpInternal::getMaximumPoolSizeOfAsyncThreadPool() const
+{
+    return m_maximumPoolSizeOfAsyncThreadPool;
+}
+
+void EasyHttpInternal::invalidateAndCancel()
+{
+    {
+        Poco::FastMutex::ScopedLock lock(m_instanceMutex);
+        if (m_invalidated) {
+            EASYHTTPCPP_LOG_D(Tag, "EasyHttp is already invalidated.");
+            return;
+        }
+        m_invalidated = true;
+    }
+
+    m_pContext->getHttpExecutionTaskManager()->gracefulShutdown();
 }
 
 } /* namespace easyhttpcpp */

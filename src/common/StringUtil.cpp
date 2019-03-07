@@ -15,6 +15,14 @@
 namespace easyhttpcpp {
 namespace common {
 
+StringUtil::StringUtil()
+{
+}
+
+StringUtil::~StringUtil()
+{
+}
+
 std::string StringUtil::format(const char* pFormat, ...)
 {
     if (!pFormat) {
@@ -26,11 +34,11 @@ std::string StringUtil::format(const char* pFormat, ...)
     va_start(argp, pFormat);
     int len = VSCPRINTF(pFormat, argp);
     // TODO use Poco::Buffer here
-    char* pResult = new char[len + 1];
+    char* pResult = new char[static_cast<size_t>(len + 1)];
     va_end(argp);
 
     va_start(argp, pFormat);
-    VSNPRINTF(pResult, len + 1, len, pFormat, argp);
+    VSNPRINTF(pResult, len + 1, static_cast<size_t>(len), pFormat, argp);
     va_end(argp);
 
     std::string retString(pResult);

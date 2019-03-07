@@ -3,7 +3,6 @@ set(SAMPLE_NAME "${CMAKE_PROJECT_NAME}-SimpleHttpClient")
 set(SAMPLE_SRCS "SimpleHttpClient.cpp")
 
 # dependent libraries
-find_package(OpenSSL REQUIRED)
 find_package(Poco REQUIRED Foundation Data DataSQLite Net NetSSL Crypto CONFIG)
 find_package(easyhttpcpp REQUIRED CONFIG)
 

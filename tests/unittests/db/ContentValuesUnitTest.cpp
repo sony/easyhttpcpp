@@ -10,6 +10,16 @@
 #include "easyhttpcpp/db/SqlException.h"
 #include "easyhttpcpp/common/StringUtil.h"
 
+#if defined(_WIN64)
+#define ULONG_LONG_MAX _UI64_MAX
+#define LONG_LONG_MIN _I64_MIN
+#define LONG_LONG_MAX _I64_MAX
+#elif defined(_WIN32)
+#define ULONG_LONG_MAX ULONG_MAX
+#define LONG_LONG_MIN LONG_MIN
+#define LONG_LONG_MAX LONG_MAX
+#endif
+
 namespace easyhttpcpp {
 namespace db {
 namespace test {
@@ -44,9 +54,9 @@ public:
 static const ContentValuesTestParam ContentValuesTestParams[] = {
     /* key, int, unsigned int, float, short, double, long, unsigned long, long long, unsigned long long, string*/
     {"key1", INT_MIN, 0, FLT_MIN, SHRT_MIN, DBL_MIN, LONG_MIN, 0, LONG_LONG_MIN, 0, "value1"},
-    {"key2", -100, 100, -100.234, -200, -1.23456, -100000, 2000, -90000000000, 800, " "},
-    {"key3", 0, 500, 0.00, 0, 0.00, 0, 30000, 0, 15000, ""},
-    {"key4", 100, 600, 100.234, 200, 200.456789, 3000000, 400000000, 90000000000, 9000000, "test string value "},
+    {"key2", -100, 100, -100.234f, -200, -1.23456, -100000, 2000, -90000000000, 800, " "},
+    {"key3", 0, 500, 0.00f, 0, 0.00, 0, 30000, 0, 15000, ""},
+    {"key4", 100, 600, 100.234f, 200, 200.456789, 3000000, 400000000, 90000000000, 9000000, "test string value "},
     {"key5", INT_MAX, UINT_MAX, FLT_MAX, SHRT_MAX, DBL_MAX, LONG_MAX, ULONG_MAX, LONG_LONG_MAX, ULONG_LONG_MAX, "test"},
 };
 

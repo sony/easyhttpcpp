@@ -101,7 +101,8 @@ TEST_F(CallExceptGetMethodIntegrationTest, execute_PostsDataToServerAndReturnsRe
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
 
     requestBuilder.setUrl(url);
     requestBuilder.httpPost(pRequestBody);
@@ -146,7 +147,8 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
     requestBuilder.setUrl(url);
     requestBuilder.httpPost(pRequestBody);
     Request::Ptr pRequest = requestBuilder.build();
@@ -178,7 +180,8 @@ TEST_F(CallExceptGetMethodIntegrationTest, execute_PutsDataToServerAndReturnsRes
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
 
     requestBuilder.setUrl(url);
     requestBuilder.httpPut(pRequestBody);
@@ -222,7 +225,8 @@ TEST_F(CallExceptGetMethodIntegrationTest, execute_PatchsDataToServerAndReturnsR
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
     requestBuilder.setUrl(url);
     requestBuilder.httpPut(pRequestBody);
     Request::Ptr pRequest = requestBuilder.build();
@@ -265,7 +269,8 @@ TEST_F(CallExceptGetMethodIntegrationTest, execute_ReturnsResponse_WhenDeleteMet
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
 
     requestBuilder.setUrl(url);
     requestBuilder.httpDelete(pRequestBody);
@@ -357,9 +362,9 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBufferStream);
+    Poco::SharedPtr<std::istream> pRequestBufferStream =
+            new Poco::MemoryInputStream(reinterpret_cast<const char*>(pRequestBuffer), requestDataBytes);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBufferStream);
 
     ssize_t requestContentLength = 20;
     std::string url = HttpTestConstants::DefaultTestUrl;
@@ -404,9 +409,9 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBufferStream);
+    Poco::SharedPtr<std::istream> pRequestBufferStream =
+            new Poco::MemoryInputStream(reinterpret_cast<const char*>(pRequestBuffer), requestDataBytes);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBufferStream);
 
     std::string url = HttpTestConstants::DefaultTestUrl;
     requestBuilder.setUrl(url);
@@ -450,9 +455,9 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBufferStream);
+    Poco::SharedPtr<std::istream> pRequestBufferStream =
+            new Poco::MemoryInputStream(reinterpret_cast<const char*>(pRequestBuffer), requestDataBytes);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBufferStream);
 
     ssize_t requestContentLength = RequestBodyLargeBytes;
     std::string url = HttpTestConstants::DefaultTestUrl;
@@ -498,9 +503,9 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBufferStream);
+    Poco::SharedPtr<std::istream> pRequestBufferStream =
+            new Poco::MemoryInputStream(reinterpret_cast<const char*>(pRequestBuffer), requestDataBytes);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBufferStream);
 
     std::string url = HttpTestConstants::DefaultTestUrl;
     requestBuilder.setUrl(url);
@@ -534,17 +539,15 @@ TEST_F(CallExceptGetMethodIntegrationTest,
 
     ssize_t requestDataBytes = 20;
     MediaType::Ptr pMediaType(new MediaType(ContentTypeOctetStream));
-    ByteArrayBuffer requestBuffer(requestDataBytes);
-    requestBuffer.setWrittenDataSize(requestDataBytes);
-    Byte* pRequestBuffer = requestBuffer.getBuffer();
+    Poco::SharedPtr<ByteArrayBuffer> pRequestBodyBuffer = new ByteArrayBuffer(requestDataBytes);
+    pRequestBodyBuffer->setWrittenDataSize(requestDataBytes);
+    Byte* pRequestBuffer = pRequestBodyBuffer->getBuffer();
     for (ssize_t i = 0; i < requestDataBytes; i++) {
         pRequestBuffer[i] = (i & 0xff);
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBuffer);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBodyBuffer);
 
     ssize_t requestContentLength = 20;
     std::string url = HttpTestConstants::DefaultTestUrl;
@@ -581,17 +584,15 @@ TEST_F(CallExceptGetMethodIntegrationTest,
 
     ssize_t requestDataBytes = RequestBodyLargeBytes;
     MediaType::Ptr pMediaType(new MediaType(ContentTypeOctetStream));
-    ByteArrayBuffer requestBuffer(requestDataBytes);
-    requestBuffer.setWrittenDataSize(requestDataBytes);
-    Byte* pRequestBuffer = requestBuffer.getBuffer();
+    Poco::SharedPtr<ByteArrayBuffer> pRequestBodyBuffer = new ByteArrayBuffer(requestDataBytes);
+    pRequestBodyBuffer->setWrittenDataSize(requestDataBytes);
+    Byte* pRequestBuffer = pRequestBodyBuffer->getBuffer();
     for (ssize_t i = 0; i < requestDataBytes; i++) {
         pRequestBuffer[i] = (i & 0xff);
     }
     
     RequestBody::Ptr pRequestBody;
-    Poco::MemoryInputStream requestBufferStream(reinterpret_cast<const char*>(pRequestBuffer),
-            requestDataBytes);
-    pRequestBody = RequestBody::create(pMediaType, requestBuffer);
+    pRequestBody = RequestBody::create(pMediaType, pRequestBodyBuffer);
 
     ssize_t requestContentLength = RequestBodyLargeBytes;
     std::string url = HttpTestConstants::DefaultTestUrl;
@@ -665,7 +666,8 @@ TEST_F(CallExceptGetMethodIntegrationTest,
     std::string url = HttpTestConstants::DefaultTestUrl;
     RequestBody::Ptr pRequestBody;
     MediaType::Ptr pMediaType(new MediaType(DefaultRequestContentType));
-    pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+    pRequestBody = RequestBody::create(pMediaType, pContent);
 
     requestBuilder.setUrl(url);
     requestBuilder.httpPost(pRequestBody).setHeader(HeaderContentLength, ContentLength100);

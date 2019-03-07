@@ -28,5 +28,6 @@ make >/dev/null
 
 # run all samples
 ./bin/easyhttpcpp-samples-SimpleHttpClient https://github.com/sony/easyhttpcpp >/dev/null 2>&1
+./bin/easyhttpcpp-samples-AsyncHttpClient https://github.com/sony/easyhttpcpp >/dev/null 2>&1
 
 cd ${CWD}

@@ -6,10 +6,15 @@
 #include "gtest/gtest.h"
 
 #include "Poco/AutoPtr.h"
-#include "Poco/ConsoleChannel.h"
 #include "Poco/FormattingChannel.h"
 #include "Poco/Logger.h"
 #include "Poco/PatternFormatter.h"
+#include "Poco/RegularExpression.h"
+#ifdef _WIN32
+#include "Poco/WindowsConsoleChannel.h"
+#else
+#include "Poco/ConsoleChannel.h"
+#endif // _WIN32
 
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/DefaultLogWriter.h"
@@ -34,7 +39,7 @@ protected:
         // Poco::Logger cleanup
         // Poco::Logger::shutdown()は、LoggerMapをclearする為、subclassのLoggerでresetToDefaultする必要がある
         Poco::Logger::shutdown();
-        CoreLogger::getInstance().resetToDefaults();
+        CoreLogger::getInstance()->resetToDefaults();
     }
 };
 const std::string DefaultLogWriterUnitTest::PatternOfLogWriterName = "EASYHTTPCPPDefaultLogWriter_[0-9]+_[0-9]+";
@@ -53,7 +58,12 @@ TEST_F(DefaultLogWriterUnitTest, constructor_SetsValidSettings)
     // Then: Check property of Poco::Logger.
     Poco::Logger& logger = Poco::Logger::get(pWriter->getName());
     Poco::FormattingChannel* pFCchannel = static_cast<Poco::FormattingChannel*> (logger.getChannel());
+#ifndef _WIN32
     Poco::ColorConsoleChannel* pChannel = static_cast<Poco::ColorConsoleChannel*> (pFCchannel->getChannel());
+#else
+    Poco::WindowsColorConsoleChannel* pChannel =
+            static_cast<Poco::WindowsColorConsoleChannel*> (pFCchannel->getChannel());
+#endif // !_WIN32
     Poco::Formatter* pFormatter = static_cast<Poco::PatternFormatter*> (pFCchannel->getFormatter());
 
     std::string enableColors = pChannel->getProperty("enableColors");
@@ -67,12 +77,18 @@ TEST_F(DefaultLogWriterUnitTest, constructor_SetsValidSettings)
     EXPECT_STREQ("true", enableColors.c_str());
     EXPECT_STREQ("lightRed", errorColor.c_str());
     EXPECT_STREQ("brown", warningColor.c_str());
+
+    // not verify results of getProperty for "informationColor", "debugColor", "traceColor" on Windows
+    // because the results are depending on Windows console font color settings, it is not "default".
+#ifndef _WIN32
     EXPECT_STREQ("default", infoColor.c_str());
     EXPECT_STREQ("default", debugColor.c_str());
     EXPECT_STREQ("default", traceColor.c_str());
+#endif // !_WIN32
     EXPECT_STREQ("%L%Y/%m/%d %H:%M:%S [%P:%I] %t", format.c_str());
 
-    EXPECT_THAT(pWriter->getName(), testing::MatchesRegex(PatternOfLogWriterName));
+    Poco::RegularExpression re(PatternOfLogWriterName);
+    EXPECT_TRUE(re.match(pWriter->getName()));
 }
 
 class LogTestParam {

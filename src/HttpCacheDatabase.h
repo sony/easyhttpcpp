@@ -47,6 +47,7 @@ public:
     };
     bool getMetadataAll(const std::string& key, HttpCacheMetadataAll& httpCacheMetadataAll);
     bool updateMetadataAll(const std::string& key, HttpCacheMetadataAll& httpCacheMetadataAll);
+    bool deleteDatabaseFile();
 
 private:
     HttpCacheDatabase();

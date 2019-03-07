@@ -9,13 +9,14 @@
 #include "Poco/RefCountedObject.h"
 
 #include "easyhttpcpp/Connection.h"
+#include "easyhttpcpp/HttpExports.h"
 
 namespace easyhttpcpp {
 
 /**
  * @brief A ConnectionPool provide http connection pool.
  */
-class ConnectionPool : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API ConnectionPool : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<ConnectionPool> Ptr;
 

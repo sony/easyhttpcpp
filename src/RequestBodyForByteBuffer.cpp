@@ -5,28 +5,30 @@
 #include <limits.h>
 
 #include "Poco/Exception.h"
-#include "Poco/NumberFormatter.h"
 
-#include "easyhttpcpp/common/ByteArrayBuffer.h"
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/HttpException.h"
 
 #include "RequestBodyForByteBuffer.h"
+#include "RequestBodyUtil.h"
+
+#if defined(_WIN64)
+#define SSIZE_MAX _I64_MAX
+#elif defined(_WIN32)
+#define SSIZE_MAX LONG_MAX
+#endif
 
 namespace easyhttpcpp {
 
 static const std::string Tag = "RequestBodyForByteBuffer";
 
 RequestBodyForByteBuffer::RequestBodyForByteBuffer(MediaType::Ptr pMediaType,
-        const easyhttpcpp::common::ByteArrayBuffer& content) : m_content(content)
+        const easyhttpcpp::common::ByteArrayBuffer& content) : RequestBody(pMediaType), m_content(content)
 {
     if (m_content.getWrittenDataSize() > SSIZE_MAX) {
-        std::string message = "buffer size is too long.[" +
-                Poco::NumberFormatter::format(m_content.getWrittenDataSize()) + "]";
-        EASYHTTPCPP_LOG_D(Tag, "%s", message.c_str());
-        throw HttpIllegalArgumentException(message);
+        EASYHTTPCPP_LOG_D(Tag, "Buffer size: [%zu] is too long.", m_content.getWrittenDataSize());
+        throw HttpIllegalArgumentException("Buffer size is too long.");
     }
-    setMediaType(pMediaType);
 }
 
 RequestBodyForByteBuffer::~RequestBodyForByteBuffer()
@@ -35,17 +37,7 @@ RequestBodyForByteBuffer::~RequestBodyForByteBuffer()
 
 void RequestBodyForByteBuffer::writeTo(std::ostream& outStream)
 {
-    try {
-        outStream.write(reinterpret_cast<const char*>(m_content.getBuffer()), m_content.getWrittenDataSize());
-    } catch (const Poco::Exception& e) {
-        std::string message = "can not send request body.";
-        EASYHTTPCPP_LOG_D(Tag, "Poco::Exception %s [%s]", message.c_str(), e.message().c_str());
-        throw HttpExecutionException(message, e);
-    } catch (const std::exception& e) {
-        std::string message = "can not send request body.";
-        EASYHTTPCPP_LOG_D(Tag, "std::exception %s [%s]", message.c_str(), e.what());
-        throw HttpExecutionException(message, e);
-    }
+    RequestBodyUtil::write(m_content, outStream);
 }
 
 bool RequestBodyForByteBuffer::hasContentLength() const

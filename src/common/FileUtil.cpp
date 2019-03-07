@@ -68,7 +68,7 @@ bool FileUtil::removeFileIfPresent(const Poco::File& file)
         fileToBeDeleted.remove();
         return !fileToBeDeleted.exists();
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "deleteTempFileIfExists(%s) error: %s", file.path().c_str(), e.message().c_str());
+        EASYHTTPCPP_LOG_D(Tag, "removeFileIfPresent(%s) error: %s", file.path().c_str(), e.message().c_str());
 
         return false;
     }
@@ -76,7 +76,7 @@ bool FileUtil::removeFileIfPresent(const Poco::File& file)
 
 bool FileUtil::moveFile(const Poco::File& sourceFile, const Poco::File& destinationFile)
 {
-    if (!sourceFile.isFile()) {
+    if (!sourceFile.exists() || !sourceFile.isFile()) {
         // sourceFile must be an existing file
         return false;
     }

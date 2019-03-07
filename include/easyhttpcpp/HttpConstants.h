@@ -7,19 +7,21 @@
 
 #include <string>
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
-class HttpConstants {
+class EASYHTTPCPP_HTTP_API HttpConstants {
 public:
 
-    class Caches {
+    class EASYHTTPCPP_HTTP_API Caches {
     public:
         static const char* const DataFileExtention;
         static const char* const CacheDir;
         static const char* const TempDir;
     };
 
-    class HeaderNames {
+    class EASYHTTPCPP_HTTP_API HeaderNames {
     public:
         static const char* const Age;
         static const char* const Authorization;
@@ -48,7 +50,7 @@ public:
         static const char* const Warning;
     };
 
-    class HeaderValues {
+    class EASYHTTPCPP_HTTP_API HeaderValues {
     public:
         static const char* const Chunked;
         static const char* const Close;
@@ -57,7 +59,7 @@ public:
         static const char* const ApplicationOctetStream;
     };
 
-    class CacheDirectives {
+    class EASYHTTPCPP_HTTP_API CacheDirectives {
     public:
         static const char* const MaxAge;
         static const char* const MaxStale;
@@ -72,17 +74,23 @@ public:
         static const char* const SMaxAge;
     };
 
-    class Schemes {
+    class EASYHTTPCPP_HTTP_API Schemes {
     public:
         static const char* const Http;
         static const char* const Https;
     };
 
-    class Database {
+    class EASYHTTPCPP_HTTP_API Database {
     public:
         static const char* const FileName;
         static const char* const TableName;
         static const unsigned int Version;
+    };
+
+    class AsyncRequests {
+    public:
+        static const unsigned int DefaultCorePoolSizeOfAsyncThreadPool;
+        static const unsigned int DefaultMaximumPoolSizeOfAsyncThreadPool;
     };
 };
 

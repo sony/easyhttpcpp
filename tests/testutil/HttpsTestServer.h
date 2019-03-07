@@ -24,7 +24,7 @@ public:
     void useDefaultCa(bool defaultCaUsed);
 
 protected:
-    virtual Poco::Net::ServerSocket* newSocket(unsigned int port);
+    virtual Poco::Net::ServerSocket* newSocket(unsigned short port);
 
 private:
     Poco::Path m_privateKeyFile;

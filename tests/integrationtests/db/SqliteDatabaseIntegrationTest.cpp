@@ -16,6 +16,7 @@
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
 #include "EasyHttpCppAssertions.h"
 #include "PartialMockSqliteOpenHelper.h"
+#include "TestLogger.h"
 #include "TestPreferences.h"
 
 #include "SqliteDatabaseIntegrationTestConstants.h"
@@ -51,12 +52,11 @@ protected:
 
     void TearDown()
     {
+        EASYHTTPCPP_TESTLOG_TEARDOWN_START();
+
         Poco::Path databaseFilePath(DatabaseDirString, DatabaseFileName);
-        if (m_pTestUtil) {
-            m_pTestUtil->clearDatabaseFiles(databaseFilePath);
-        } else {
-            FileUtil::removeFileIfPresent(databaseFilePath);
-        }
+        m_pTestUtil = NULL;
+        FileUtil::removeFileIfPresent(databaseFilePath);
     }
 
     void createDefaultDatabaseTable()
@@ -278,10 +278,8 @@ TEST_F(SqliteDatabaseIntegrationTest, insert_Succeeds)
 
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     AutoSqliteTransaction autoTransaction(pDb);
-    SqliteDatabase::RowId rowId = pDb->insert(DatabaseTableName, *pContentValues);
+    pDb->insert(DatabaseTableName, *pContentValues);
     pDb->setTransactionSuccessful();
-
-    EXPECT_EQ(3, rowId);
 
     // Then: verify query result
     std::vector<std::string> columns;
@@ -315,10 +313,8 @@ TEST_F(SqliteDatabaseIntegrationTest, replace_Succeeds_WhenPrimaryKeyConflicts)
 
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     AutoSqliteTransaction autoTransaction(pDb);
-    SqliteDatabase::RowId rowId = pDb->replace(DatabaseTableName, *(pContentValues.get()));
+    pDb->replace(DatabaseTableName, *(pContentValues.get()));
     pDb->setTransactionSuccessful();
-
-    EXPECT_EQ(3, rowId);
 
     // Then: verify query result
     std::vector<std::string> columns;
@@ -359,10 +355,8 @@ TEST_F(SqliteDatabaseIntegrationTest, replace_Succeeds_WhenPrimaryKeyDoesNotConf
 
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     AutoSqliteTransaction autoTransaction(pDb);
-    SqliteDatabase::RowId rowId = pDb->replace(DatabaseTableName, *(pContentValues.get()));
+    pDb->replace(DatabaseTableName, *(pContentValues.get()));
     pDb->setTransactionSuccessful();
-
-    EXPECT_EQ(3, rowId);
 
     // Then: verify query result
     std::vector<std::string> columns;
@@ -721,12 +715,10 @@ TEST_F(SqliteDatabaseIntegrationTest, endTransaction_RollbacksData_WhenWithoutCa
 
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     pDb->beginTransaction();
-    SqliteDatabase::RowId rowId = pDb->insert(DatabaseTableName, *(pContentValues.get()));
+    pDb->insert(DatabaseTableName, *(pContentValues.get()));
 
     // call SqliteDatabase::endTransaction() without call setTransactionSuccessful()
     pDb->endTransaction();
-
-    EXPECT_EQ(3, rowId);
 
     // Then: verify query result
     std::vector<std::string> columns;
@@ -1096,7 +1088,7 @@ TEST_F(SqliteDatabaseIntegrationTest, query_ReturnsQueryResult_WhenDatabaseHasNo
     EXPECT_EQ(0, pCursor->getCount());
 }
 
-TEST_F(SqliteDatabaseIntegrationTest, query_ReturnsQueryResult_AfterClose)
+TEST_F(SqliteDatabaseIntegrationTest, query_ThrowsSqlIllegalStateException_AfterClose)
 {
     // Given: create database
     createDefaultDatabaseTable();
@@ -1105,26 +1097,15 @@ TEST_F(SqliteDatabaseIntegrationTest, query_ReturnsQueryResult_AfterClose)
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     pDb->close();
 
-    // Then: query succeeds
+    // Then: query throws exception
     std::vector<std::string> columns;
     columns.push_back("Age");
     columns.push_back("Name");
     columns.push_back("Address");
     columns.push_back("Id");
 
-    SqliteCursor::Ptr pCursor = pDb->query(DatabaseTableName, &columns, NULL, NULL, NULL, NULL,
-            NULL, NULL, false);
-
-    // verify query result
-    EXPECT_TRUE(databaseHasColumns(pCursor, 4, columns));
-
-    RowElement expectedExistRows[] = {
-        {1, "Bart Simpson", "Springfield", 12},
-        {2, "Lisa Simpson", "Springfield", 10}
-    };
-    for (size_t i = 0; i < ELEMENT_NUM(expectedExistRows); i++) {
-        EXPECT_TRUE(databaseHasRow(pCursor, expectedExistRows[i]));
-    }
+    EASYHTTPCPP_ASSERT_THROW(pDb->query(DatabaseTableName, &columns, NULL, NULL, NULL, NULL, NULL, NULL, false),
+            SqlIllegalStateException, 100201);
 }
 
 TEST_F(SqliteDatabaseIntegrationTest, execSql_Succeeds_WhenExecuteInsert)

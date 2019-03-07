@@ -17,6 +17,7 @@
 #include "easyhttpcpp/CrlCheckPolicy.h"
 #include "easyhttpcpp/Interceptor.h"
 #include "easyhttpcpp/HttpCache.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Proxy.h"
 #include "easyhttpcpp/Request.h"
 
@@ -33,7 +34,7 @@ namespace easyhttpcpp {
  * EasyHttp adapts many of its design features from a well known Android's HTTP client, okHttp and uses
  * POCO C++ libraries under the hood.
  */
-class EasyHttp : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API EasyHttp : public Poco::RefCountedObject {
 public:
     /**
      * A "smart" pointer to facilitate reference counting based garbage collection.
@@ -119,12 +120,34 @@ public:
      */
     virtual ConnectionPool::Ptr getConnectionPool() const = 0;
 
+    /**
+     * Get the number of threads to keep in the thread pool to execute asynchronous request as set inside the builder
+     * or 2 if not set.
+     * 
+     * @return the number of threads to keep.
+     */
+    virtual unsigned int getCorePoolSizeOfAsyncThreadPool() const = 0;
+
+    /**
+     * Get the maximum number of threads of thread pool to execute asynchronous request as set inside the builder or 5
+     * if not set.
+     * @return the maximum number of threads.
+     */
+    virtual unsigned int getMaximumPoolSizeOfAsyncThreadPool() const = 0;
+
+    /**
+     * Invalidate EasyHttp object and cancel all background tasks.
+     *
+     * @note please call this method from the main thread.
+     */
+    virtual void invalidateAndCancel() = 0;
+
 protected:
     EasyHttp();
 
 public:
 
-    class Builder {
+    class EASYHTTPCPP_HTTP_API Builder {
     public:
         Builder();
         virtual ~Builder();
@@ -133,6 +156,7 @@ public:
          * Builds EasyHttp by specified parameters.
          *
          * @return EasyHttp
+         * @exception HttpExecutionException
          */
         EasyHttp::Ptr build();
 
@@ -257,10 +281,46 @@ public:
         Builder& setConnectionPool(ConnectionPool::Ptr pConnectionPool);
 
         /**
-         * @brief Set ConnectionPool.
+         * @brief Get ConnectionPool.
          * @return ConnectionPool
          */
         ConnectionPool::Ptr getConnectionPool() const;
+
+        /**
+         * @brief Set the number of threads to keep in the thread pool to execute asynchronous request,
+         * even if they are idle.
+         * 
+         * @param corePoolSizeOfAsyncThreadPool the number of threads to keep.
+         * @return Builder
+         */
+        Builder& setCorePoolSizeOfAsyncThreadPool(unsigned int corePoolSizeOfAsyncThreadPool);
+
+        /**
+         * @brief Get the number of threads to keep in the thread pool to execute asynchronous request,
+         * even if they are idle.
+         * 
+         * If the number of threads to keep is not set, the number of threads to keep is 2.
+         * @return the number of threads to keep.
+         */
+        unsigned int getCorePoolSizeOfAsyncThreadPool() const;
+
+        /**
+         * @brief Set the maximum number of threads of thread pool to execute asynchronous request.
+         * 
+         * If asynchronous requests greater than the maximum size are requested, the request is queued and executed
+         * sequentially.
+         * @param maximumPoolSizeOfAsyncThreadPool the maximum number of threads.
+         * @return Builder
+         */
+        Builder& setMaximumPoolSizeOfAsyncThreadPool(unsigned int maximumPoolSizeOfAsyncThreadPool);
+
+        /**
+         * @brief Get the maximum number of threads of thread pool to execute asynchronous request.
+         * 
+         * If the maximum number of threads is not set, the maximum number of threads is 5.
+         * @return the maximum number of threads.
+         */
+        unsigned int getMaximumPoolSizeOfAsyncThreadPool() const;
 
     private:
         HttpCache::Ptr m_pCache;
@@ -272,6 +332,8 @@ public:
         std::list<Interceptor::Ptr> m_callInterceptors;
         std::list<Interceptor::Ptr> m_networkInterceptors;
         ConnectionPool::Ptr m_pConnectionPool;
+        unsigned int m_corePoolSizeOfAsyncThreadPool;
+        unsigned int m_maximumPoolSizeOfAsyncThreadPool;
     };
 };
 

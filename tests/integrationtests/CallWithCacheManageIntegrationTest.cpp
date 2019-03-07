@@ -34,6 +34,7 @@
 #include "FileContentsEqualMatcher.h"
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
+#include "TestLogger.h"
 #include "TimeInRangeMatcher.h"
 
 #include "HttpCacheDatabase.h"
@@ -66,7 +67,11 @@ static const char* const LruQuery6 = "test=6";
 static const char* const LruQuery7 = "test=7";
 static const char* const LruQuery8 = "test=8";
 
-static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/cache";
+#ifndef _WIN32
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/unix/cache";
+#else
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/windows/cache";
+#endif
 
 class CallWithCacheManageIntegrationTest : public HttpIntegrationTestCase {
 protected:
@@ -75,6 +80,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -466,6 +473,7 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     EXPECT_TRUE(responseBodyFile8.exists());
 }
 
+// キャッシュread中にpurgeを呼ぶと、Windowsではsharing violationが発生するためEXCLUDE
 TEST_F(CallWithCacheManageIntegrationTest, execute_ReturnsResponse_WhenGetAfterPurgeDuringReadFromCache)
 {
     // Given: purge during read from cache.
@@ -568,6 +576,9 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_ReturnsRespnseAndCreateCache_
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // 2nd. delete cache directory
+    // call HttpCache::evictAll() to avoid occurring sharing violation in windows.
+    // if not call evictAll(), sharing violation will occur when call cacheRootDir.remove()
+    pCache->evictAll();
     Poco::File cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     cacheRootDir.remove(true);
 

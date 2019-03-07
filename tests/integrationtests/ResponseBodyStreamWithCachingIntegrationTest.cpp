@@ -14,7 +14,6 @@
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/Connection.h"
@@ -27,6 +26,8 @@
 #include "easyhttpcpp/ResponseBodyStream.h"
 #include "EasyHttpCppAssertions.h"
 #include "HttpTestServer.h"
+#include "TestFileUtil.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
@@ -39,6 +40,7 @@
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
 using easyhttpcpp::testutil::HttpTestServer;
+using easyhttpcpp::testutil::TestFileUtil;
 
 namespace easyhttpcpp {
 namespace test {
@@ -58,8 +60,23 @@ protected:
     void SetUp()
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
+        TestFileUtil::setFullAccess(path);
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
+
+    void TearDown()
+    {
+        EASYHTTPCPP_TESTLOG_TEARDOWN_START();
+
+        if (!m_pathToCleanUp.toString().empty()) {
+            TestFileUtil::setFullAccess(m_pathToCleanUp);
+            FileUtil::removeDirsIfPresent(m_pathToCleanUp);
+        }
+    }
+
+    Poco::Path m_pathToCleanUp;
 };
 
 namespace {
@@ -152,8 +169,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
     // Given: use cache and set read only to parent of temp directory
     Poco::File cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     cacheRootDir.createDirectories();
-    cacheRootDir.setReadOnly(true);
-    
+    m_pathToCleanUp.assign(cacheRootDir.path());
+    TestFileUtil::setReadOnly(m_pathToCleanUp);
+
     HttpTestServer testServer;
     HttpTestCommonRequestHandler::OkRequestHandler handler;
     testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
@@ -182,7 +200,7 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
 
     // When: ResponesBodyStream::read
     // Then: not throw exception
-    EXPECT_GE(strlen(HttpTestConstants::DefaultResponseBody), pResponseBodyStream->read(responseBodyBuffer.begin(),
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), pResponseBodyStream->read(responseBodyBuffer.begin(),
             ResponseBufferBytes));
 }
 
@@ -194,8 +212,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
     // Given: set read only to parent of temp directory
     Poco::File cacheTempDir(HttpTestUtil::getDefaultCacheRootDir());
     cacheTempDir.createDirectories();
-    cacheTempDir.setReadOnly(true);
-    
+    m_pathToCleanUp.assign(cacheTempDir.path());
+    TestFileUtil::setReadOnly(m_pathToCleanUp);
+
     HttpTestServer testServer;
     HttpTestCommonRequestHandler::OkRequestHandler handler;
     testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
@@ -225,7 +244,7 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
     // When: ResponesBodyStream::read
     // Then: not throw exception
     ssize_t retSize = pResponseBodyStream->read(responseBodyBuffer.begin(), ResponseBufferBytes);
-    EXPECT_GE(strlen(HttpTestConstants::DefaultResponseBody), retSize);
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), retSize);
 }
 
 // eof の後の、read
@@ -299,7 +318,7 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
             static_cast<ResponseBodyStreamWithCaching*>(pResponseBodyStream.get());
     Connection::Ptr pConnection = pResponseBodyStreamWithCaching->getConnection();
     int beforeReferenceCount = pConnection->referenceCount();
-    EASYHTTPCPP_LOG_D(Tag, "pConnection.referenceCount() = %d", beforeReferenceCount);
+    EASYHTTPCPP_TESTLOG_I(Tag, "pConnection.referenceCount() = %d", beforeReferenceCount);
 
     // When: close response body stream with skip response body
     pResponseBodyStream->close();
@@ -462,8 +481,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
     // Given: set read only to parent of temp directory
     Poco::File cacheTempDir(HttpTestUtil::getDefaultCacheRootDir());
     cacheTempDir.createDirectories();
-    cacheTempDir.setReadOnly(true);
-    
+    m_pathToCleanUp.assign(cacheTempDir.path());
+    TestFileUtil::setReadOnly(m_pathToCleanUp);
+
     HttpTestServer testServer;
     HttpTestCommonRequestHandler::OkRequestHandler handler;
     testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);

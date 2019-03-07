@@ -15,7 +15,7 @@ namespace easyhttpcpp {
 namespace testutil {
 
 template<class Result>
-class MockFuture : public Common::Future<Result> {
+class MockFuture : public common::Future<Result> {
 public:
     typedef Poco::SharedPtr<MockFuture <Result> > Ptr;
 

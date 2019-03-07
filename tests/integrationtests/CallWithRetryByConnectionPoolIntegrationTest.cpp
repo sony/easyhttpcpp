@@ -21,6 +21,7 @@
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
 #include "EasyHttpCppAssertions.h"
+#include "TestLogger.h"
 
 #include "ConnectionConfirmationInterceptor.h"
 #include "ConnectionInternal.h"
@@ -78,6 +79,8 @@ protected:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -432,7 +435,8 @@ TEST_F(CallWithRetryByConnectionPoolIntegrationTest,
     // request body は、string。
     RequestBody::Ptr pRequestBody2;
     MediaType::Ptr pMediaType2(new MediaType(HttpTestConstants::DefaultRequestContentType));
-    pRequestBody2 = RequestBody::create(pMediaType2, HttpTestConstants::DefaultRequestBody);
+    Poco::SharedPtr<std::string> pContent = new std::string(HttpTestConstants::DefaultRequestBody);
+    pRequestBody2 = RequestBody::create(pMediaType2, pContent);
     Request::Builder requestBuilder2;
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url).httpPut(pRequestBody2).build();
     Call::Ptr pCall2 = pHttpClient->newCall(pRequest2);
@@ -630,8 +634,8 @@ TEST_F(CallWithRetryByConnectionPoolIntegrationTest,
     // request body は、ByteArrayBuffer。
     RequestBody::Ptr pRequestBody2;
     MediaType::Ptr pMediaType2(new MediaType(HttpTestConstants::DefaultRequestContentType));
-    ByteArrayBuffer requestBody2(HttpTestConstants::DefaultRequestBody);
-    pRequestBody2 = RequestBody::create(pMediaType2, requestBody2);
+    Poco::SharedPtr<ByteArrayBuffer> pContent = new ByteArrayBuffer(HttpTestConstants::DefaultRequestBody);
+    pRequestBody2 = RequestBody::create(pMediaType2, pContent);
     Request::Builder requestBuilder2;
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url).httpPut(pRequestBody2).build();
     Call::Ptr pCall2 = pHttpClient->newCall(pRequest2);
@@ -697,8 +701,8 @@ TEST_F(CallWithRetryByConnectionPoolIntegrationTest,
     // request body は、std::istream。
     RequestBody::Ptr pRequestBody2;
     MediaType::Ptr pMediaType2(new MediaType(HttpTestConstants::DefaultRequestContentType));
-    std::stringstream requestBody2(HttpTestConstants::DefaultRequestBody);
-    pRequestBody2 = RequestBody::create(pMediaType2, requestBody2);
+    Poco::SharedPtr<std::istream> pContent = new std::stringstream(HttpTestConstants::DefaultRequestBody);
+    pRequestBody2 = RequestBody::create(pMediaType2, pContent);
     Request::Builder requestBuilder2;
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url).httpPut(pRequestBody2).build();
     Call::Ptr pCall2 = pHttpClient->newCall(pRequest2);

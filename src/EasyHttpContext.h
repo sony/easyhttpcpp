@@ -17,6 +17,8 @@
 #include "easyhttpcpp/Interceptor.h"
 #include "easyhttpcpp/Proxy.h"
 
+#include "HttpExecutionTaskManager.h"
+
 namespace easyhttpcpp {
 
 class EasyHttpContext : public Poco::RefCountedObject {
@@ -44,6 +46,8 @@ public:
     virtual InterceptorList& getNetworkInterceptors();
     virtual void setConnectionPool(ConnectionPool::Ptr pConnectionPool);
     virtual ConnectionPool::Ptr getConnectionPool() const;
+    virtual void setHttpExecutionTaskManager(HttpExecutionTaskManager::Ptr pExecutionTaskManager);
+    virtual HttpExecutionTaskManager::Ptr getHttpExecutionTaskManager() const;
 
     static const unsigned int DefaultTimeoutSec;
 
@@ -57,6 +61,7 @@ private:
     InterceptorList m_callInterceptors;
     InterceptorList m_networkInterceptors;
     ConnectionPool::Ptr m_pConnectionPool;
+    HttpExecutionTaskManager::Ptr m_pExecutionTaskManager;
 };
 
 } /* namespace easyhttpcpp */

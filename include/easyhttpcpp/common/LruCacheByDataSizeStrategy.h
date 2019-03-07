@@ -14,11 +14,12 @@
 
 #include "easyhttpcpp/common/CacheStrategy.h"
 #include "easyhttpcpp/common/CacheInfoWithDataSize.h"
+#include "easyhttpcpp/common/CommonExports.h"
 
 namespace easyhttpcpp {
 namespace common {
 
-class LruCacheByDataSizeStrategy : public CacheStrategy<std::string, CacheInfoWithDataSize::Ptr> {
+class EASYHTTPCPP_COMMON_API LruCacheByDataSizeStrategy : public CacheStrategy<std::string, CacheInfoWithDataSize::Ptr> {
 public:
     typedef Poco::AutoPtr<LruCacheByDataSizeStrategy> Ptr;
     typedef CacheStrategyListener<std::string, CacheInfoWithDataSize::Ptr> LruCacheByDataSizeStrategyListener;

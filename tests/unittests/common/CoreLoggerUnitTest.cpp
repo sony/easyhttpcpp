@@ -9,6 +9,7 @@
 #include "Poco/Channel.h"
 #include "Poco/Logger.h"
 #include "Poco/Message.h"
+#include "Poco/RegularExpression.h"
 
 #include "easyhttpcpp/common/CoreLogger.h"
 
@@ -37,7 +38,7 @@ protected:
     void cleanupLogger()
     {
         Poco::Logger::shutdown();
-        CoreLogger::getInstance().resetToDefaults();
+        CoreLogger::getInstance()->resetToDefaults();
     }
 
     class MockPocoChannel : public Poco::Channel {
@@ -58,11 +59,11 @@ TEST_F(CoreLoggerUnitTest, getInstance_ReturnsSingletonInstance_WhenCalledTwice)
     // Given: -
 
     // When: CoreLogger#getInstance()を呼ぶ
-    CoreLogger& coreLogger1 = CoreLogger::getInstance();
-    CoreLogger& coreLogger2 = CoreLogger::getInstance();
+    CoreLogger* pCoreLogger1 = CoreLogger::getInstance();
+    CoreLogger* pCoreLogger2 = CoreLogger::getInstance();
 
     // Then: インスタンスが同じである
-    EXPECT_EQ(&coreLogger1, &coreLogger2);
+    EXPECT_EQ(pCoreLogger1, pCoreLogger2);
 }
 
 class EASYHTTPCPPCORELOGXParameterizedTestParam {
@@ -143,7 +144,7 @@ INSTANTIATE_TEST_CASE_P(CoreLoggerUnitTest, EASYHTTPCPPCORELOGXParameterizedTest
 TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGX_PassesExpectedParamsToMockChannel)
 {
     // Given: CoreLoggerとMockChannelを準備
-    CoreLogger::getInstance().setLoggingLevel(GetParam().m_setLoggingLevel);
+    CoreLogger::getInstance()->setLoggingLevel(GetParam().m_setLoggingLevel);
 
     // Poco::Message に保存する
     Poco::Message pocoMessage;
@@ -154,7 +155,7 @@ TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGX_PassesExpectedP
     } else {
         EXPECT_CALL(*pMockChannel, log(testing::_)).Times(GetParam().m_logCalledTimes);
     }
-    Poco::Logger& logger = Poco::Logger::get(CoreLogger::getInstance().getLogWriter()->getName());
+    Poco::Logger& logger = Poco::Logger::get(CoreLogger::getInstance()->getLogWriter()->getName());
     logger.setChannel(pMockChannel);
 
     // When: EASYHTTPCPP_LOGマクロを呼び出す
@@ -183,7 +184,8 @@ TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGX_PassesExpectedP
         EXPECT_EQ(ConvertToPocoMessagePriority[GetParam().m_messageLogLevel], pocoMessage.getPriority());
         std::string messageRegularExpression = StringUtil::format(ExpectedRegexFormat, GetParam().m_tag.c_str(),
                 ConvertToLogLevelChars[GetParam().m_messageLogLevel], GetParam().m_message.c_str());
-        EXPECT_THAT(pocoMessage.getText().c_str(), testing::MatchesRegex(messageRegularExpression));
+        Poco::RegularExpression re(messageRegularExpression);
+        EXPECT_TRUE(re.match(pocoMessage.getText().c_str()));
     }
 }
 
@@ -196,7 +198,7 @@ TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGX_PassesExpectedP
 TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGXWithFormatter_PassesExpectedParamsToMockChannel)
 {
     // Given: CoreLoggerとMockChannelを準備
-    CoreLogger::getInstance().setLoggingLevel(GetParam().m_setLoggingLevel);
+    CoreLogger::getInstance()->setLoggingLevel(GetParam().m_setLoggingLevel);
 
     // Poco::Message に保存する
     Poco::Message pocoMessage;
@@ -207,7 +209,7 @@ TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGXWithFormatter_Pa
     } else {
         EXPECT_CALL(*pMockChannel, log(testing::_)).Times(GetParam().m_logCalledTimes);
     }
-    Poco::Logger& logger = Poco::Logger::get(CoreLogger::getInstance().getLogWriter()->getName());
+    Poco::Logger& logger = Poco::Logger::get(CoreLogger::getInstance()->getLogWriter()->getName());
     logger.setChannel(pMockChannel);
 
     // When: EASYHTTPCPP_LOGマクロを呼び出す
@@ -236,7 +238,8 @@ TEST_P(EASYHTTPCPPCORELOGXParameterizedTest, EASYHTTPCPPCORELOGXWithFormatter_Pa
         EXPECT_EQ(ConvertToPocoMessagePriority[GetParam().m_messageLogLevel], pocoMessage.getPriority());
         std::string messageRegularExpression = StringUtil::format(ExpectedRegexFormat, GetParam().m_tag.c_str(),
                 ConvertToLogLevelChars[GetParam().m_messageLogLevel], GetParam().m_message.c_str());
-        EXPECT_THAT(pocoMessage.getText().c_str(), testing::MatchesRegex(messageRegularExpression));
+        Poco::RegularExpression re(messageRegularExpression);
+        EXPECT_TRUE(re.match(pocoMessage.getText().c_str()));
     }
 }
 

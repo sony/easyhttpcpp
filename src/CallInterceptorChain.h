@@ -4,8 +4,8 @@
 
 #include "easyhttpcpp/Interceptor.h"
 
-#include "CallInternal.h"
 #include "EasyHttpContext.h"
+#include "HttpRequestExecutor.h"
 
 #ifndef EASYHTTPCPP_APPLICATIONINTERCEPTORCHAIN_H_INCLUDED
 #define EASYHTTPCPP_APPLICATIONINTERCEPTORCHAIN_H_INCLUDED
@@ -14,7 +14,7 @@ namespace easyhttpcpp {
 
 class CallInterceptorChain : public Interceptor::Chain {
 public:
-    CallInterceptorChain(CallInternal& call, Request::Ptr pRequest,
+    CallInterceptorChain(HttpRequestExecutor::Ptr pRequestExecutior, Request::Ptr pRequest,
             EasyHttpContext::InterceptorList::iterator& currentIterator,
             EasyHttpContext::InterceptorList::const_iterator& endIterator);
     virtual ~CallInterceptorChain();
@@ -23,7 +23,7 @@ public:
     virtual Response::Ptr proceed(Request::Ptr pRequest);
 
 private:
-    CallInternal& m_call;
+    HttpRequestExecutor::Ptr m_pRequestExecutor;
     Request::Ptr m_pRequest;
     EasyHttpContext::InterceptorList::iterator& m_currentIterator;
     EasyHttpContext::InterceptorList::const_iterator& m_endIterator;

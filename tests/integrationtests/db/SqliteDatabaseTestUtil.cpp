@@ -7,12 +7,12 @@
 
 #include "SqliteDatabaseTestUtil.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/db/AutoSqliteTransaction.h"
 #include "easyhttpcpp/db/SqlException.h"
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
+#include "TestLogger.h"
 
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
@@ -33,6 +33,7 @@ SqliteDatabaseTestUtil::SqliteDatabaseTestUtil()
 
 SqliteDatabaseTestUtil::~SqliteDatabaseTestUtil()
 {
+    m_pDatabase->closeSqliteSession();
 }
 
 bool SqliteDatabaseTestUtil::createAndOpenDatabase(const Poco::Path& path, unsigned int version)
@@ -49,7 +50,7 @@ bool SqliteDatabaseTestUtil::createAndOpenDatabase(const Poco::Path& path, unsig
         m_pDatabase = m_pHelper->getWritableDatabase();
         ret = true;
     } catch (const SqlException& e) {
-        EASYHTTPCPP_LOG_D(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
+        EASYHTTPCPP_TESTLOG_I(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
         e.rethrow();
     }
     return ret;
@@ -73,7 +74,7 @@ bool SqliteDatabaseTestUtil::createTable(const std::string tableName, const std:
         ret = true;
 
     } catch (const SqlException& e) {
-        EASYHTTPCPP_LOG_D(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
+        EASYHTTPCPP_TESTLOG_I(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
         e.rethrow();
     }
     return ret;
@@ -102,7 +103,7 @@ bool SqliteDatabaseTestUtil::insertData(const std::string tableName, std::vector
         ret = true;
 
     } catch (const SqlException& e) {
-        EASYHTTPCPP_LOG_D(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
+        EASYHTTPCPP_TESTLOG_I(Tag, "catch exception in createAndOpenDatabase [%s]", e.getMessage().c_str());
         e.rethrow();
     }
     return ret;
@@ -122,7 +123,7 @@ SqliteCursor::Ptr SqliteDatabaseTestUtil::queryDatabase(const std::string& table
                 NULL, false);
         return pCursor;
     } catch (const SqlException& e) {
-        EASYHTTPCPP_LOG_D(Tag, "catch exception in queryDatabase");
+        EASYHTTPCPP_TESTLOG_I(Tag, "catch exception in queryDatabase");
         return NULL;
     }
 }

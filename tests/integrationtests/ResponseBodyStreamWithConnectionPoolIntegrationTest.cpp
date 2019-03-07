@@ -14,6 +14,7 @@
 #include "easyhttpcpp/Interceptor.h"
 #include "HeaderContainMatcher.h"
 #include "HttpTestServer.h"
+#include "TestLogger.h"
 
 #include "CallInternal.h"
 #include "ConnectionConfirmationInterceptor.h"
@@ -46,6 +47,8 @@ protected:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 

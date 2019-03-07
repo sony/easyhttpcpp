@@ -11,6 +11,7 @@
 #include "Poco/Channel.h"
 #include "Poco/Logger.h"
 #include "Poco/Message.h"
+#include "Poco/RegularExpression.h"
 #include "Poco/SharedPtr.h"
 
 #include "easyhttpcpp/common/BaseLogger.h"
@@ -51,7 +52,7 @@ protected:
         // Poco::Logger cleanup
         // Poco::Logger::shutdown()は、LoggerMapをclearする為、subclassのLoggerでresetToDefaultする必要がある
         Poco::Logger::shutdown();
-        CoreLogger::getInstance().resetToDefaults();
+        CoreLogger::getInstance()->resetToDefaults();
         m_pBaseLogger->resetToDefaults();
     }
 
@@ -441,19 +442,19 @@ TEST_P(EASYHTTPCPPLOGXParameterizedTest, EASYHTTPCPPLOGX_PassesExpectedParamsToL
     // When: EASYHTTPCPP_LOGマクロを呼び出す
     switch (GetParam().m_level) {
         case LogLevelError:
-            EASYHTTPCPP_BASE_LOG_E(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_E(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelWarning:
-            EASYHTTPCPP_BASE_LOG_W(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_W(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelInfo:
-            EASYHTTPCPP_BASE_LOG_I(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_I(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelDebug:
-            EASYHTTPCPP_BASE_LOG_D(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_D(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelVerbose:
-            EASYHTTPCPP_BASE_LOG_V(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_V(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         default:
             ADD_FAILURE() << "Failed to call EASYHTTPCPP_BASE_LOG_X macro's. It's unknown LogLevel.";
@@ -511,19 +512,19 @@ TEST_P(EASYHTTPCPPLOGXRedirectParameterizedTest, EASYHTTPCPPLOGX_CanBeLogOutput_
     // When: EASYHTTPCPP_LOGマクロを呼び出す
     switch (GetParam().m_level) {
         case LogLevelError:
-            EASYHTTPCPP_BASE_LOG_E(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_E(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelWarning:
-            EASYHTTPCPP_BASE_LOG_W(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_W(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelInfo:
-            EASYHTTPCPP_BASE_LOG_I(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_I(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelDebug:
-            EASYHTTPCPP_BASE_LOG_D(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_D(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         case LogLevelVerbose:
-            EASYHTTPCPP_BASE_LOG_V(logger, GetParam().m_tag, GetParam().m_message.c_str());
+            EASYHTTPCPP_BASE_LOG_V(&logger, GetParam().m_tag, GetParam().m_message.c_str());
             break;
         default:
             ADD_FAILURE() << "Failed to call EASYHTTPCPP_BASE_LOG_X macro's. It's unknown LogLevel.";
@@ -544,7 +545,8 @@ TEST_P(EASYHTTPCPPLOGXRedirectParameterizedTest, EASYHTTPCPPLOGX_CanBeLogOutput_
         // 正規表現の文字列を作成し、文字列を比較する
         std::string messageRegex = StringUtil::format(ExpectedRegularExpressionFormat.c_str(), GetParam().m_tag.c_str(),
                 LogLevelChar[GetParam().m_level], GetParam().m_message.c_str());
-        EXPECT_THAT(*it, testing::MatchesRegex(messageRegex));
+        Poco::RegularExpression re(messageRegex);
+        EXPECT_TRUE(re.match(*it));
     }
 }
 
@@ -575,7 +577,7 @@ TEST_F(BaseLoggerUnitTest, messageSize_BoundaryCheck)
     capture.startCapture();
 
     // When: マクロ実行
-    EASYHTTPCPP_BASE_LOG_E(logger, tag, message.c_str());
+    EASYHTTPCPP_BASE_LOG_E(&logger, tag, message.c_str());
 
     // Then: 落ちないこと
     capture.endCapture();

@@ -6,7 +6,7 @@
 
 #include "Poco/StreamCopier.h"
 
-#include "easyhttpcpp/common/CoreLogger.h"
+#include "TestLogger.h"
 
 #include "HttpTestBaseRequestHandler.h"
 
@@ -30,9 +30,9 @@ void HttpTestBaseRequestHandler::saveRequestParamemter(Poco::Net::HTTPServerRequ
     m_method = request.getMethod();
     m_uri = request.getURI();
     m_requestHeaders = request;
-    EASYHTTPCPP_LOG_D(Tag, "request.size=%d", request.size());
+    EASYHTTPCPP_TESTLOG_I(Tag, "request.size=%d", request.size());
     for (Poco::Net::NameValueCollection::ConstIterator it = request.begin(); it != request.end(); it++) {
-        EASYHTTPCPP_LOG_D(Tag, "%s %s", it->first.c_str(), it->second.c_str());
+        EASYHTTPCPP_TESTLOG_I(Tag, "%s %s", it->first.c_str(), it->second.c_str());
     }
     m_requestContentType = request.getContentType();
     m_hasRequestContentLength = request.hasContentLength();
@@ -72,7 +72,7 @@ void HttpTestBaseRequestHandler::clearParameter()
     m_method.clear();
     m_hasRequestContentLength = false;
     m_requestContentLength = 0;
-    m_requestBodyBytes = -1;
+    m_requestBodyBytes = 0;
     m_requestBody.clear();
     m_pRequestBodyBuffer = NULL;
     m_requestContentType.clear();

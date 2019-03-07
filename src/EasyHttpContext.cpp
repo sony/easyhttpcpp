@@ -111,4 +111,14 @@ ConnectionPool::Ptr EasyHttpContext::getConnectionPool() const
     return m_pConnectionPool;
 }
 
+void EasyHttpContext::setHttpExecutionTaskManager(HttpExecutionTaskManager::Ptr pExecutionTaskManager)
+{
+    m_pExecutionTaskManager = pExecutionTaskManager;
+}
+
+HttpExecutionTaskManager::Ptr EasyHttpContext::getHttpExecutionTaskManager() const
+{
+    return m_pExecutionTaskManager;
+}
+
 } /* namespace easyhttpcpp */

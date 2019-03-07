@@ -17,6 +17,7 @@
 #include "easyhttpcpp/Headers.h"
 #include "HeadersEqualMatcher.h"
 #include "TestFileUtil.h"
+#include "TestLogger.h"
 
 #include "HttpIntegrationTestCase.h"
 #include "HttpCacheMetadata.h"
@@ -34,7 +35,11 @@ namespace easyhttpcpp {
 namespace test {
 
 static const std::string Tag = "HttpFileCacheIntegrationTest";
-static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/cache";
+#ifndef _WIN32
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/unix/cache";
+#else
+static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/windows/cache";
+#endif
 static const char* const LruQuery1 = "test=1";
 static const char* const LruQuery3 = "test=3";
 static const char* const LruQuery4 = "test=4";
@@ -62,7 +67,10 @@ protected:
     void SetUp()
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
+        TestFileUtil::setFullAccess(path);
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -275,7 +283,7 @@ TEST_F(HttpFileCacheIntegrationTest, getMetadata_ReturnsFalse_WhenUpdateLastAcce
 
     // set read only to database in order to fail updateLastAccessSec.
     Poco::File databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    databaseFile.setReadOnly(true);
+    TestFileUtil::setReadOnly(databaseFile.path());
 
     // When: getMetadata
     // Then: return false
@@ -347,6 +355,9 @@ TEST_F(HttpFileCacheIntegrationTest, getMetadata_ReturnsFalse_WhenAfterPurge)
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
 
     ASSERT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
@@ -501,6 +512,9 @@ TEST_F(HttpFileCacheIntegrationTest, getData_ReturnsFalse_WhenAfterPurge)
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
 
     ASSERT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
@@ -689,7 +703,7 @@ TEST_F(HttpFileCacheIntegrationTest, get_ReturnsFalse_WhenUpdateLastAccessSecFai
 
     // set read only to database in order to fail updateLastAccessSec.
     Poco::File databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    databaseFile.setReadOnly(true);
+    TestFileUtil::setReadOnly(databaseFile.path());
 
     // When: get
     // Then: return false
@@ -747,6 +761,9 @@ TEST_F(HttpFileCacheIntegrationTest, get_ReturnsFalse_WhenAfterPurge)
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
 
     ASSERT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
@@ -921,6 +938,9 @@ TEST_F(HttpFileCacheIntegrationTest, putMetadata_ReturnsTrue_WhenAfterPurge)
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
 
     ASSERT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
@@ -1306,6 +1326,9 @@ TEST_F(HttpFileCacheIntegrationTest, put_ReturnsTrue_WhenAfterPurge)
 
     ASSERT_TRUE(httpFileCache.purge(true));
 
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
+
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
@@ -1466,6 +1489,9 @@ TEST_F(HttpFileCacheIntegrationTest, remove_ReturnsFalse_WhenAfterPurge)
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
 
     ASSERT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
@@ -1691,6 +1717,9 @@ TEST_F(HttpFileCacheIntegrationTest, releaseData_NothingHappens_WhenAfterPurge)
 
     ASSERT_TRUE(httpFileCache.purge(true));
 
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
+
     std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
 
@@ -1730,6 +1759,9 @@ TEST_F(HttpFileCacheIntegrationTest,
     // Then: all data remove from cache
     EXPECT_TRUE(httpFileCache.purge(true));
 
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
+
     // confirm to remove
     HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
     HttpCacheDatabase::HttpCacheMetadataAll metadata1;
@@ -1764,6 +1796,7 @@ TEST_F(HttpFileCacheIntegrationTest,
 // mayDeleteIfBusy == true で、dataRefCount > 0 の key がある場合のpurge
 //
 // 全てのCache が削除される。
+// ref count > 0 なので, purgeするとWindowsではsharing violationが発生するためEXCLUDE
 TEST_F(HttpFileCacheIntegrationTest,
         purge_ReturnsTrueAndRemovesAllCache_WhenMayDeleteIfBusyIsTrueAndExistsDataRefCountGreaterThanZero)
 {
@@ -1793,6 +1826,9 @@ TEST_F(HttpFileCacheIntegrationTest,
     // When: purge (mayDeleteIfBusy == true)
     // Then: all data remove from cache
     EXPECT_TRUE(httpFileCache.purge(true));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     // confirm to remove
     HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
@@ -1846,6 +1882,9 @@ TEST_F(HttpFileCacheIntegrationTest,
     // When: purge
     // Then: all data remove from cache
     EXPECT_TRUE(httpFileCache.purge(false));
+
+    // check if cache database file is exists.
+    ASSERT_FALSE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     // confirm to remove
     HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
@@ -1911,6 +1950,9 @@ TEST_F(HttpFileCacheIntegrationTest,
     // When: purge
     // Then: all data remove from cache
     EXPECT_FALSE(httpFileCache.purge(false));
+
+    // check if cache database file is exists.
+    ASSERT_TRUE(Poco::File(HttpTestUtil::getDefaultCacheDatabaseFile()).exists());
 
     // confirm to remove (LRU_QUERY1 is not removed)
     HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));

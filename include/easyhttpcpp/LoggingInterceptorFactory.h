@@ -6,10 +6,11 @@
 #define EASYHTTPCPP_LOGGINGINTERCEPTORFACTORY_H_INCLUDED
 
 #include "easyhttpcpp/LoggingInterceptor.h"
+#include "easyhttpcpp/HttpExports.h"
 
 namespace easyhttpcpp {
 
-class LoggingInterceptorFactory {
+class EASYHTTPCPP_HTTP_API LoggingInterceptorFactory {
 public:
     LoggingInterceptorFactory();
     virtual ~LoggingInterceptorFactory();

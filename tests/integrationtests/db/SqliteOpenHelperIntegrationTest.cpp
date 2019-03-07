@@ -11,6 +11,7 @@
 #include "easyhttpcpp/db/SqlException.h"
 #include "EasyHttpCppAssertions.h"
 #include "PartialMockSqliteOpenHelper.h"
+#include "TestLogger.h"
 #include "SqliteDatabaseIntegrationTestConstants.h"
 
 using namespace ::testing;
@@ -33,10 +34,14 @@ protected:
     {
         Poco::File databaseDir(DatabaseDirString);
         FileUtil::createDirsIfAbsent(databaseDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 
     void TearDown()
     {
+        EASYHTTPCPP_TESTLOG_TEARDOWN_START();
+
         Poco::Path databaseFilePath(DatabaseDirString, DatabaseFileName);
         Poco::File databaseFile(databaseFilePath.absolute().toString());
         FileUtil::removeFileIfPresent(databaseFile);

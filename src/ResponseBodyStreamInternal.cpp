@@ -17,6 +17,12 @@
 
 using easyhttpcpp::common::StringUtil;
 
+#if defined(_WIN64)
+#define SSIZE_MAX _I64_MAX
+#elif defined(_WIN32)
+#define SSIZE_MAX LONG_MAX
+#endif
+
 namespace easyhttpcpp {
 
 static const std::string Tag = "ResponseBodyStreamInternal";

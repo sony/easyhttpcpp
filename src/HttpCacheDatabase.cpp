@@ -5,6 +5,7 @@
 #include "Poco/Timestamp.h"
 
 #include "easyhttpcpp/common/CoreLogger.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/db/AutoSqliteCursor.h"
 #include "easyhttpcpp/db/AutoSqliteDatabase.h"
 #include "easyhttpcpp/db/AutoSqliteTransaction.h"
@@ -20,6 +21,7 @@
 
 using easyhttpcpp::common::Cache;
 using easyhttpcpp::common::CacheMetadata;
+using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::db::AutoSqliteCursor;
 using easyhttpcpp::db::AutoSqliteDatabase;
 using easyhttpcpp::db::AutoSqliteTransaction;
@@ -80,6 +82,7 @@ void HttpCacheDatabase::onUpgrade(SqliteDatabase& db, unsigned int oldVersion,
 bool HttpCacheDatabase::getMetadata(const std::string& key, HttpCacheMetadata*& pHttpCacheMetadata)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
+
     pHttpCacheMetadata = NULL;
 
     SqliteDatabase::Ptr pDb;
@@ -206,18 +209,11 @@ bool HttpCacheDatabase::updateMetadata(const std::string& key, HttpCacheMetadata
 
         // do an INSERT, and if that INSERT fails because of a conflict,
         // delete the conflicting rows before INSERTing again
-        SqliteDatabase::RowId insertedAt = pDb->replace(HttpConstants::Database::TableName, values);
-        EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadata at row: %lld", insertedAt);
+        pDb->replace(HttpConstants::Database::TableName, values);
+        EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadata.");
 
-        if (insertedAt > 0) {
-            pDb->setTransactionSuccessful();
-            updated = true;
-        } else {
-            // there was some error while replace
-            EASYHTTPCPP_LOG_D(Tag, "Database replace error at row: %lld", insertedAt);
-
-            // do not set the transaction as successful; database will rollback automatically
-        }
+        pDb->setTransactionSuccessful();
+        updated = true;
 
         // dump
         EASYHTTPCPP_LOG_D(Tag, "updateMetadata");
@@ -271,6 +267,12 @@ bool HttpCacheDatabase::updateLastAccessedSec(const std::string& key)
     }
 
     return updated;
+}
+
+bool HttpCacheDatabase::deleteDatabaseFile()
+{
+    Poco::FastMutex::ScopedLock lock(m_mutex);
+    return FileUtil::removeFileIfPresent(Poco::File(getDatabasePath().absolute().toString()));
 }
 
 bool HttpCacheDatabase::enumerate(HttpCacheEnumerationListener* pListener)
@@ -423,18 +425,11 @@ bool HttpCacheDatabase::updateMetadataAll(const std::string& key,
 
         // do an INSERT, and if that INSERT fails because of a conflict,
         // delete the conflicting rows before INSERTing again
-        SqliteDatabase::RowId insertedAt = pDb->replace(HttpConstants::Database::TableName, values);
-        EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadataAll at row: %lld", insertedAt);
+        pDb->replace(HttpConstants::Database::TableName, values);
+        EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadataAll.");
 
-        if (insertedAt > 0) {
-            pDb->setTransactionSuccessful();
-            updated = true;
-        } else {
-            // there was some error while replace
-            EASYHTTPCPP_LOG_D(Tag, "updateMetadataAll: Database replace error at row: %lld", insertedAt);
-
-            // do not set the transaction as successful; database will rollback automatically
-        }
+        pDb->setTransactionSuccessful();
+        updated = true;
 
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while updateMetadataAll(): %s", e.getMessage().c_str());

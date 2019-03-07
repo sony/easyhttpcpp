@@ -16,7 +16,7 @@ target_compile_definitions(${TESTRUNNER} PRIVATE
 
 target_link_libraries(${TESTRUNNER}
                       easyhttp-testutil
-                      easyhttp
+		      easyhttp
                       GMock::main
                       Poco::Foundation
                       Poco::Data Poco::DataSQLite

@@ -13,11 +13,12 @@
 #include "Poco/Data/RecordSet.h"
 
 #include "easyhttpcpp/db/Cursor.h"
+#include "easyhttpcpp/db/DbExports.h"
 
 namespace easyhttpcpp {
 namespace db {
 
-class SqliteCursor : public Poco::RefCountedObject, public Cursor {
+class EASYHTTPCPP_DB_API SqliteCursor : public Poco::RefCountedObject, public Cursor {
 public:
     typedef Poco::AutoPtr<SqliteCursor> Ptr;
 

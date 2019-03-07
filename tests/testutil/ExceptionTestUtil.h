@@ -236,7 +236,7 @@ static const char* const ExceptionMessagePrefix = "EASYHTTPCPP-ERR-";
             GTEST_FAIL() << "Failed to catch target exception.";                                                    \
         }                                                                                                           \
     }                                                                                                               \
-    TEST_F(TARGETCLS##UnitTest, getCause_Succeeds_WhenNestedCauseByQuiverException)                                 \
+    TEST_F(TARGETCLS##UnitTest, getCause_Succeeds_WhenNestedCauseByEasyHttpException)                                 \
     {                                                                                                               \
         /* Given: Preparing the exception message. */                                                               \
         std::string message = "easyhttpcpp";                                                                             \

@@ -2,7 +2,7 @@
  * Copyright 2017 Sony Corporation
  */
 
-#include "Poco/ConsoleChannel.h"
+#include "Poco/Channel.h"
 #include "Poco/FormattingChannel.h"
 #include "Poco/Logger.h"
 #include "Poco/Message.h"
@@ -12,6 +12,8 @@
 
 #include "easyhttpcpp/common/DefaultLogWriter.h"
 #include "easyhttpcpp/common/StringUtil.h"
+
+#include "ColorConsoleChannelCreator.h"
 
 namespace easyhttpcpp {
 namespace common {
@@ -91,7 +93,7 @@ Poco::AutoPtr<Poco::FormattingChannel> DefaultLogWriter::createChannel()
     // AutoPtr duplicate at constructor and release at destructor of FormattingChannel.
     // Same as FormattingChannel by Poco::Logger.
     Poco::AutoPtr<Poco::PatternFormatter> pFormatter = new Poco::PatternFormatter("%L%Y/%m/%d %H:%M:%S [%P:%I] %t");
-    Poco::AutoPtr<Poco::ColorConsoleChannel> pChannel = new Poco::ColorConsoleChannel;
+    Poco::AutoPtr<Poco::Channel> pChannel = ColorConsoleChannelCreator::create();
     Poco::AutoPtr<Poco::FormattingChannel> pFCConsole = new Poco::FormattingChannel(pFormatter, pChannel);
 
     // Sets color brown. When the background is white, yellow is hard to see.

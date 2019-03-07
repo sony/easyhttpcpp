@@ -8,16 +8,19 @@
 #include "Poco/Path.h"
 
 #include "easyhttpcpp/common/CoreLogger.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/db/ContentValues.h"
 #include "easyhttpcpp/db/SqliteOpenHelper.h"
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
 #include "easyhttpcpp/db/SqlException.h"
 #include "EasyHttpCppAssertions.h"
+#include "TestLogger.h"
 
 #include "SqliteDatabaseIntegrationTestConstants.h"
 #include "SqliteDatabaseTestUtil.h"
 
+using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
 
 namespace easyhttpcpp {
@@ -44,11 +47,11 @@ struct SqliteCursorTestData {
 };
 
 static const SqliteCursorTestData SqliteCursorTestDataSet[] = {
-    {1.111111, 6.2222, 1, -10, 825, 20160825, "string 1"},
-    {2.111111, -7.2222, -2, 11, -826, 20160826, "string 2"},
-    {-3.111111, 8.2222, 3, -12, 827, 20160827, "string 3"},
-    {4.111111, 9.2222, -4, 13, 828, 20160828, "string 4"},
-    {5.111111, 10.2222, 5, -14, -829, 20160829, "string 5"}
+    {1.111111, 6.2222f, 1, -10, 825, 20160825, "string 1"},
+    {2.111111, -7.2222f, -2, 11, -826, 20160826, "string 2"},
+    {-3.111111, 8.2222f, 3, -12, 827, 20160827, "string 3"},
+    {4.111111, 9.2222f, -4, 13, 828, 20160828, "string 4"},
+    {5.111111, 10.2222f, 5, -14, -829, 20160829, "string 5"}
 };
 
 #define TEST_DATA_NUM (sizeof(SqliteCursorTestDataSet) / (sizeof SqliteCursorTestDataSet[0]))
@@ -59,8 +62,11 @@ protected:
 
     void TearDown()
     {
+        EASYHTTPCPP_TESTLOG_TEARDOWN_START();
+
         Poco::Path databaseFilePath(DatabaseDirString, DatabaseFileName);
-        m_pTestUtil->clearDatabaseFiles(databaseFilePath);
+        m_pTestUtil = NULL;
+        FileUtil::removeFileIfPresent(databaseFilePath);
     }
 
     void createDefaultDatabaseTable()
@@ -706,7 +712,7 @@ TEST_F(SqliteCursorIntegrationTest, optGetFloat_ReturnsFloatValue)
     SqliteCursor::Ptr pCursor = queryDatabase(DatabaseTableName, NULL, NULL, NULL);
 
     // Then: optGetFloat returns proper value
-    float defaultValue = 0.12345;
+    float defaultValue = 0.12345f;
     size_t i = 0;
     do {
         EXPECT_FLOAT_EQ(SqliteCursorTestDataSet[i].m_float, pCursor->optGetFloat(1, defaultValue));
@@ -724,7 +730,7 @@ TEST_F(SqliteCursorIntegrationTest, optGetFloat_ReturnsDefaultValue_WhenColumnTy
     SqliteCursor::Ptr pCursor = queryDatabase(DatabaseTableName, NULL, NULL, NULL);
 
     // Then: optGetFloat returns default value
-    float defaultValue = 0.12345;
+    float defaultValue = 0.12345f;
     EXPECT_FLOAT_EQ(defaultValue, pCursor->optGetFloat(6, defaultValue));
 }
 
@@ -738,7 +744,7 @@ TEST_F(SqliteCursorIntegrationTest, optGetFloat_ReturnsDefaultValue_WhenIndexIsO
     SqliteCursor::Ptr pCursor = queryDatabase(DatabaseTableName, NULL, NULL, NULL);
 
     // Then: optGetFloat returns default value
-    float defaultValue = 0.12345;
+    float defaultValue = 0.12345f;
     EXPECT_FLOAT_EQ(defaultValue, pCursor->optGetFloat(pCursor->getColumnCount() + 1, defaultValue));
 }
 
@@ -753,7 +759,7 @@ TEST_F(SqliteCursorIntegrationTest, optGetFloat_ReturnsDefaultValue_AfterCloseCu
     pCursor->close();
 
     // Then: optGetFloat returns default value
-    float defaultValue = 0.12345;
+    float defaultValue = 0.12345f;
     EXPECT_FLOAT_EQ(defaultValue, pCursor->optGetFloat(1, defaultValue));
 }
 

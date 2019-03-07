@@ -15,6 +15,8 @@ namespace testutil {
 
 class MockInterceptor : public easyhttpcpp::Interceptor {
 public:
+    typedef Poco::AutoPtr<MockInterceptor> Ptr;
+
     MOCK_METHOD1(intercept, easyhttpcpp::Response::Ptr(Interceptor::Chain& chain));
 };
 

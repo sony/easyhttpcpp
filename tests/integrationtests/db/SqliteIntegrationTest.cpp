@@ -7,13 +7,15 @@
 #include "Poco/File.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/db/SqliteDatabase.h"
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
+#include "TestLogger.h"
 
 #include "SqliteDatabaseIntegrationTestConstants.h"
 #include "SqliteDatabaseTestUtil.h"
 
-
+using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::testutil::PartialMockSqliteOpenHelper;
 
 namespace easyhttpcpp {
@@ -84,8 +86,11 @@ protected:
 
     void TearDown()
     {
+        EASYHTTPCPP_TESTLOG_TEARDOWN_START();
+
         Poco::Path databaseFilePath(DatabaseDirString, DatabaseFileName);
-        m_pTestUtil->clearDatabaseFiles(databaseFilePath);
+        m_pTestUtil = NULL;
+        FileUtil::removeFileIfPresent(databaseFilePath);
     }
 
     void createDefaultDatabaseTable()

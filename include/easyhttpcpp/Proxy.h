@@ -10,12 +10,14 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/RefCountedObject.h"
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
 /**
  * @brief A Proxy preserve proxy.
  */
-class Proxy : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_API Proxy : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<Proxy> Ptr;
 

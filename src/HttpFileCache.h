@@ -51,6 +51,7 @@ private:
     std::string makeCachedFilename(const std::string& key);
     void cleanupCache(const std::string& key);
     bool initializeCache();
+    void deleteCacheFile();
 
     Poco::FastMutex m_instanceMutex;
     bool m_cacheInitialized;

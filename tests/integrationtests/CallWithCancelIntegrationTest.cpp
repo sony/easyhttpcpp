@@ -19,7 +19,6 @@
 #include "Poco/Net/HTTPServerResponse.h"
 
 #include "easyhttpcpp/common/ByteArrayBuffer.h"
-#include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/EasyHttp.h"
@@ -32,6 +31,7 @@
 #include "EasyHttpCppAssertions.h"
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
+#include "TestLogger.h"
 #include "TestPreferences.h"
 
 #include "HttpIntegrationTestCase.h"
@@ -101,7 +101,7 @@ public:
     // test の verify (EXPECT_XXX) で表示するメッセージを設定します。
     void setErrorMessage(const std::string& message)
     {
-        EASYHTTPCPP_LOG_E(Tag, "%s", message.c_str());
+        EASYHTTPCPP_TESTLOG_E(Tag, "%s", message.c_str());
         if (m_message.empty()) {
             m_message = message;
         }
@@ -115,7 +115,7 @@ public:
     bool cancel()
     {
         if (!m_pCall) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] Call is not created.", m_runnerId.c_str());
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] Call is not created.", m_runnerId.c_str());
             return false;
         }
         m_pCall->cancel();
@@ -209,13 +209,13 @@ protected:
             pResponse = m_pCall->execute();
         } catch (const HttpExecutionException& e) {
             m_executeElapsedTime = m_startTime.elapsed();
-            EASYHTTPCPP_LOG_D(Tag, "[%s] execute: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] execute: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
         } catch (const HttpSslException& e) {
             m_executeElapsedTime = m_startTime.elapsed();
-            EASYHTTPCPP_LOG_D(Tag, "[%s] execute: HttpSslException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] execute: HttpSslException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
@@ -236,17 +236,17 @@ protected:
                 pResponseBodyStream->read(responseBodyBuffer.begin(), CancelResponseBodyReadUnitSize);
             }
         } catch (const HttpExecutionException& e) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] read: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] read: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
         } catch (const HttpIllegalStateException& e) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] read: HttpIllegalException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] read: HttpIllegalException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
         } catch (const HttpSslException& e) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] read: HttpSslException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] read: HttpSslException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
@@ -287,7 +287,7 @@ protected:
         Response::Ptr pResponse;
         // execute
         pResponse = m_pCall->execute();
-        EASYHTTPCPP_LOG_D(Tag, "[%s] Response code=%d", m_runnerId.c_str(), pResponse->getCode());
+        EASYHTTPCPP_TESTLOG_I(Tag, "[%s] Response code=%d", m_runnerId.c_str(), pResponse->getCode());
 
         ResponseBody::Ptr pResponseBody = pResponse->getBody();
         ResponseBodyStream::Ptr pResponseBodyStream = pResponseBody->getByteStream();
@@ -306,12 +306,12 @@ protected:
                 pResponseBodyStream->read(responseBodyBuffer.begin(), CancelResponseBodyReadUnitSize);
             }
         } catch (const HttpExecutionException& e) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] read: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] read: HttpExecutionException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
         } catch (const HttpIllegalStateException& e) {
-            EASYHTTPCPP_LOG_D(Tag, "[%s] read: HttpIllegalException occurred.code=%u message=%s", m_runnerId.c_str(),
+            EASYHTTPCPP_TESTLOG_I(Tag, "[%s] read: HttpIllegalException occurred.code=%u message=%s", m_runnerId.c_str(),
                     e.getCode(), e.getMessage().c_str());
             checkException(e);
             return true;
@@ -344,6 +344,8 @@ protected:
     {
         Poco::Path path(HttpTestUtil::getDefaultCachePath());
         FileUtil::removeDirsIfPresent(path);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
     Poco::AutoPtr<ForCancelRequestHandler> m_pHandlers[MultiThreadCount];
     Poco::AutoPtr<HttpCancelRunner> m_pExecutes[MultiThreadCount];
@@ -581,7 +583,7 @@ TEST_F(CallWithCancelIntegrationTest,
         }
 
         RequestBody::Ptr pRequestBody;
-        pRequestBody = RequestBody::create(pMediaType, *(m_pRequestBuffer[i]));
+        pRequestBody = RequestBody::create(pMediaType, m_pRequestBuffer[i]);
         requestBuilder.httpPost(pRequestBody);
 
         Request::Ptr pRequest = requestBuilder.build();
@@ -698,9 +700,9 @@ TEST_F(CallWithCancelIntegrationTest,
             EXPECT_GT(abortTimeoutSec, m_pExecutes[i]->getExecuteElapsedTime() / 1000000)  << "may be connection hang.";
         }
 
-        EASYHTTPCPP_LOG_D(Tag, "Exception from sendRequest = %d (fromPoco = %d) sleep=%ld", sendRequestExceptionCount,
+        EASYHTTPCPP_TESTLOG_I(Tag, "Exception from sendRequest = %d (fromPoco = %d) sleep=%ld", sendRequestExceptionCount,
                 sendRequestExceptionFromPocoCount, sleepMilliSec);
-        EASYHTTPCPP_LOG_D(Tag, "Exception from receiveResponse = %d (fromPoco = %d)", receiveResponseExceptionCount,
+        EASYHTTPCPP_TESTLOG_I(Tag, "Exception from receiveResponse = %d (fromPoco = %d)", receiveResponseExceptionCount,
                 receiveResponseExceptionFromPocoCount);
 
         totalSendRequestExceptionCount += sendRequestExceptionCount;
@@ -709,9 +711,9 @@ TEST_F(CallWithCancelIntegrationTest,
         totalReceiveResponseExceptionFromPocoCount += receiveResponseExceptionFromPocoCount;
     }
 
-    EASYHTTPCPP_LOG_D(Tag, "total Exception from sendRequest = %d (fromPoco = %d)", totalSendRequestExceptionCount,
+    EASYHTTPCPP_TESTLOG_I(Tag, "total Exception from sendRequest = %d (fromPoco = %d)", totalSendRequestExceptionCount,
             totalSendRequestExceptionFromPocoCount);
-    EASYHTTPCPP_LOG_D(Tag, "total Exception from receiveResponse = %d (fromPoco = %d)", totalReceiveResponseExceptionCount,
+    EASYHTTPCPP_TESTLOG_I(Tag, "total Exception from receiveResponse = %d (fromPoco = %d)", totalReceiveResponseExceptionCount,
             totalReceiveResponseExceptionFromPocoCount);
 }
 
@@ -766,7 +768,7 @@ TEST_F(CallWithCancelIntegrationTest,
     // When: cancel
     for (int i = 0; i < MultiThreadCount; i++) {
         ASSERT_TRUE(m_pExecutes[i]->cancel());
-        EASYHTTPCPP_LOG_D(Tag, "cancel no=%d", i);
+        EASYHTTPCPP_TESTLOG_I(Tag, "cancel no=%d", i);
     }
 
     threadPool.stopAll();

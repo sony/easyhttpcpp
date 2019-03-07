@@ -16,6 +16,7 @@ EASYHTTPCPP_IMPLEMENT_EXCEPTION_SUB_GROUP(SqlException, CoreException, Exception
 EASYHTTPCPP_IMPLEMENT_EXCEPTION(SqlIllegalArgumentException, SqlException, 0)
 EASYHTTPCPP_IMPLEMENT_EXCEPTION(SqlIllegalStateException, SqlException, 1)
 EASYHTTPCPP_IMPLEMENT_EXCEPTION(SqlExecutionException, SqlException, 2)
+EASYHTTPCPP_IMPLEMENT_EXCEPTION(SqlDatabaseCorruptException, SqlException, 3)
 
 } /* namespace db */
 } /* namespace easyhttpcpp */

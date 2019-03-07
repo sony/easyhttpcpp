@@ -17,6 +17,12 @@ using easyhttpcpp::common::ByteArrayBuffer;
 typedef std::string(*FuncDigestWithByteArrayBuffer) (const ByteArrayBuffer&);
 typedef std::string(*FuncDigestWithString) (const std::string&);
 
+#ifndef _WIN32
+static const size_t HashedFileNameSize = 64;
+#else
+static const size_t HashedFileNameSize = 40;
+#endif
+
 class DigestUtilUnitTest : public testing::Test {
 public:
     static const Byte SourceDataNormal[];
@@ -274,6 +280,81 @@ TEST_P(DigestWithStringTwiceParameterizeTest, digestHex_CanGetsSameDigestStringO
 
     //Then: 1回目と2回目のdigestデータは同じである
     EXPECT_EQ(actual1, actual2);
+}
+
+class CreateHashedFileNameTestParam {
+public:
+    const Byte* m_pData;
+    size_t m_dataSize;
+    std::string m_hashString;
+};
+
+static const CreateHashedFileNameTestParam CreateHashedFileNameTestParams[] = {
+#ifndef _WIN32
+    {DigestUtilUnitTest::SourceDataNormal, sizeof(DigestUtilUnitTest::SourceDataNormal),
+            DigestUtilUnitTest::ExpectedSha256StringNormal},
+    {DigestUtilUnitTest::SourceDataOneByte, 1, DigestUtilUnitTest::ExpectedSha256OneByte},
+    {&DigestUtilUnitTest::SourceDataNullByte, 0/*empty*/,
+            DigestUtilUnitTest::ExpectedSha256NullByteByString}
+#else
+    {DigestUtilUnitTest::SourceDataNormal, sizeof(DigestUtilUnitTest::SourceDataNormal),
+            DigestUtilUnitTest::ExpectedSha1StringNormal},
+    {DigestUtilUnitTest::SourceDataOneByte, 1, DigestUtilUnitTest::ExpectedSha1OneByte},
+    {&DigestUtilUnitTest::SourceDataNullByte, 0/*empty*/,
+            DigestUtilUnitTest::ExpectedSha1NullByteByString}
+#endif
+};
+
+class CreateHashedFileNameParameterizedTest : public DigestUtilUnitTest,
+        public ::testing::WithParamInterface<CreateHashedFileNameTestParam> {
+};
+INSTANTIATE_TEST_CASE_P(DigestUtilUnitTest, CreateHashedFileNameParameterizedTest,
+        ::testing::ValuesIn(CreateHashedFileNameTestParams));
+
+TEST_P(CreateHashedFileNameParameterizedTest, createHashedFileName_ReturnsDigest)
+{
+    //Given: 元データを準備する
+    std::string source(reinterpret_cast<const char*> (GetParam().m_pData), GetParam().m_dataSize);
+
+    //When: HashedFileNameを取得する
+    std::string fileName = DigestUtil::createHashedFileName(source);
+
+    // Then: 期待したdigestが取得できる, sizeが期待値と一致する
+    EXPECT_EQ(GetParam().m_hashString, fileName);
+    EXPECT_EQ(HashedFileNameSize, fileName.size());
+}
+
+class CreateHashedFileNameNotInitializeParam {
+public:
+    std::string m_hashString;
+};
+
+static const CreateHashedFileNameNotInitializeParam CreateHashedFileNameNotInitializeParams[] = {
+#ifndef _WIN32
+    {DigestUtilUnitTest::ExpectedSha256NoData}
+#else
+    {DigestUtilUnitTest::ExpectedSha1NoData}
+#endif
+};
+
+class CreateHashedFileNameNotInitializeParameterizeTest : public DigestUtilUnitTest,
+        public ::testing::WithParamInterface<CreateHashedFileNameNotInitializeParam> {
+};
+INSTANTIATE_TEST_CASE_P(DigestUtilUnitTest, CreateHashedFileNameNotInitializeParameterizeTest,
+        ::testing::ValuesIn(CreateHashedFileNameNotInitializeParams));
+
+TEST_P(CreateHashedFileNameNotInitializeParameterizeTest,
+        createHashedFileName_ReturnsDigest_WhenNotInitializedParameter)
+{
+    //Given: 初期化していないstd::stringを準備する
+    std::string source;
+
+    //When: HashedFileNameを取得する
+    std::string fileName = DigestUtil::createHashedFileName(source);
+
+    // Then: 期待したdigestが取得できる, sizeが期待値と一致する
+    EXPECT_EQ(GetParam().m_hashString, fileName);
+    EXPECT_EQ(HashedFileNameSize, fileName.size());
 }
 
 } /* namespace test */

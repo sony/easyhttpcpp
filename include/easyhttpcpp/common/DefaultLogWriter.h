@@ -8,12 +8,13 @@
 #include "Poco/Logger.h"
 #include "Poco/FormattingChannel.h"
 
+#include "easyhttpcpp/common/CommonExports.h"
 #include "easyhttpcpp/common/LogWriter.h"
 
 namespace easyhttpcpp {
 namespace common {
 
-class DefaultLogWriter : public LogWriter {
+class EASYHTTPCPP_COMMON_API DefaultLogWriter : public LogWriter {
 public:
     DefaultLogWriter();
     virtual ~DefaultLogWriter();

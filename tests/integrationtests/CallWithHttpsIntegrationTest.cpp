@@ -24,6 +24,7 @@
 #include "EasyHttpCppAssertions.h"
 #include "HttpsTestServer.h"
 #include "MockInterceptor.h"
+#include "TestLogger.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpIntegrationTestCase.h"
@@ -66,6 +67,8 @@ protected:
 
         Poco::Path certRootDir(HttpTestUtil::getDefaultCertRootDir());
         FileUtil::removeDirsIfPresent(certRootDir);
+
+        EASYHTTPCPP_TESTLOG_SETUP_END();
     }
 };
 
@@ -265,7 +268,8 @@ TEST_P(HttpsValidRootCaTest, execute_DoesNotOccurSslErrorAndReturnsResponse_When
         case Request::HttpMethodPut:
         {
             MediaType::Ptr pMediaType = new MediaType(DefaultRequestContentType);
-            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+            Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
             requestBuilder.httpPut(pRequestBody);
             break;
         }
@@ -634,7 +638,8 @@ TEST_P(HttpsInvalidRootCaTest, execute_ThrowsException_WhenCombinationMethodAndR
         case Request::HttpMethodPut:
         {
             MediaType::Ptr pMediaType = new MediaType(DefaultRequestContentType);
-            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, DefaultRequestBody);
+            Poco::SharedPtr<std::string> pContent = new std::string(DefaultRequestBody);
+            RequestBody::Ptr pRequestBody = RequestBody::create(pMediaType, pContent);
             requestBuilder.httpPut(pRequestBody);
             break;
         }
