@@ -1,5 +1,13 @@
 # Change Log
 
+## [2.1.0](https://github.com/sony/easyhttpcpp/releases/tag/2.1.0) (Nov 12, 2019)
+#### Added
+Features added:
+- Improved Windows support
+- Support for cache database corruption listener
+- Minor bug fixes
+- More tests
+
 ## [2.0.0](https://github.com/sony/easyhttpcpp/releases/tag/2.0.0) (March 07, 2019)
 #### Added
 Features added:
