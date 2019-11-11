@@ -11,10 +11,12 @@
 #include "Poco/MemoryStream.h"
 #include "Poco/SharedPtr.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class StdCLogCapture {
+class EASYHTTPCPP_TESTUTIL_API StdCLogCapture {
 public:
     typedef std::vector<std::string> CapturedLinesVec;
 

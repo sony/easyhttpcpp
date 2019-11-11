@@ -37,7 +37,7 @@ protected:
 
     void cleanupLogger()
     {
-        Poco::Logger::shutdown();
+        Poco::Logger::destroy(CoreLogger::getInstance()->getLogWriter()->getName());
         CoreLogger::getInstance()->resetToDefaults();
     }
 

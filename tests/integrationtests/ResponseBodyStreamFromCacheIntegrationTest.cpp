@@ -413,10 +413,9 @@ TEST_P(MethodForRemoveBeforeCloseOfGetTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check cache
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    ASSERT_TRUE(db.getMetadataAll(key, metadata1));
+    ASSERT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url from cached response.(not be called networkInterceptor)
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -477,8 +476,7 @@ TEST_P(MethodForRemoveBeforeCloseOfGetTest,
     std::string responseBody3 = pResponse3->getBody()->toString();
 
     // check cache
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    ASSERT_TRUE(db.getMetadataAll(key, metadata3));
+    ASSERT_FALSE(db.getMetadataAll(key).isNull());
 
     // read response body of Get
     Poco::Buffer<char> responseBodyBuffer2(ResponseBufferBytes);
@@ -489,8 +487,7 @@ TEST_P(MethodForRemoveBeforeCloseOfGetTest,
     pResponseBodyStream2->close();
 
     // Then: remove cached response
-    HttpCacheDatabase::HttpCacheMetadataAll metadata4;
-    EXPECT_FALSE(db.getMetadataAll(key, metadata4));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
             Request::HttpMethodGet, url));
     EXPECT_FALSE(responseBodyFile.exists());

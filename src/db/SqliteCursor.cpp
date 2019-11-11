@@ -225,7 +225,7 @@ long SqliteCursor::getLong(size_t columnIndex)
         EASYHTTPCPP_LOG_D(Tag, "getLong Failed columnIndex [%zu]", columnIndex);
         throw SqlExecutionException("getLong Failed", e);
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "getLong Failed columnIndex [%d]", columnIndex);
+        EASYHTTPCPP_LOG_D(Tag, "getLong Failed columnIndex [%zu]", columnIndex);
         throw SqlExecutionException("getLong Failed", e);
     }
 }
@@ -354,8 +354,8 @@ CursorFieldType SqliteCursor::getType(size_t columnIndex)
         }
         return ret;
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "getType Failed columnIndex [%d]", columnIndex);
-        throw SqlIllegalArgumentException(Poco::format("invalid index %z", columnIndex), e);
+        EASYHTTPCPP_LOG_D(Tag, "getType Failed columnIndex [%zu]", columnIndex);
+        throw SqlIllegalArgumentException(Poco::format("invalid index %zu", columnIndex), e);
     }
 }
 
@@ -368,8 +368,8 @@ bool SqliteCursor::isNull(size_t columnIndex)
         std::string columnName = columnNames.at(columnIndex);
         return m_pRecordSet->isNull(columnName);
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_D(Tag, "isNull Failed columnIndex [%d]", columnIndex);
-        throw SqlIllegalArgumentException(Poco::format("invalid index %z", columnIndex), e);
+        EASYHTTPCPP_LOG_D(Tag, "isNull Failed columnIndex [%zu]", columnIndex);
+        throw SqlIllegalArgumentException(Poco::format("invalid index %zu", columnIndex), e);
     }
 }
 
@@ -377,7 +377,7 @@ bool SqliteCursor::move(int offset)
 {
     int position = static_cast<int> (m_currentRow) + offset;
     if (position < 0) {
-        EASYHTTPCPP_LOG_D(Tag, "move failed for invalid offset current row[%d] offset[%d]", m_currentRow, offset);
+        EASYHTTPCPP_LOG_D(Tag, "move failed for invalid offset current row[%zu] offset[%d]", m_currentRow, offset);
         return false;
     }
     return moveToPosition(static_cast<unsigned int>(position));

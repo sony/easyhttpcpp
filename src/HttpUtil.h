@@ -11,11 +11,12 @@
 #include "Poco/Timestamp.h"
 
 #include "easyhttpcpp/Headers.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 
 namespace easyhttpcpp {
 
-class HttpUtil {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpUtil {
 public:
     static const std::string& httpMethodToString(Request::HttpMethod httpMethod);
     static bool tryParseDate(const std::string& value, Poco::Timestamp& timeStamp);

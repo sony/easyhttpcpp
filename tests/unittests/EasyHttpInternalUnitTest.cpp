@@ -8,13 +8,13 @@
 #include "easyhttpcpp/common/Cache.h"
 #include "easyhttpcpp/EasyHttp.h"
 #include "easyhttpcpp/Interceptor.h"
-#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 #include "EasyHttpCppAssertions.h"
 #include "MockInterceptor.h"
 
 #include "EasyHttpContext.h"
 #include "EasyHttpInternal.h"
+#include "HttpInternalConstants.h"
 
 namespace easyhttpcpp {
 namespace test {
@@ -110,7 +110,7 @@ TEST(EasyHttpInternalUnitTest, getCorePoolSizeOfAsyncThreadPool_ReturnsTwo_whenN
 
     // When: getCorePoolSizeOfAsyncThreadPool
     // Then: get default value
-    EXPECT_EQ(HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool,
+    EXPECT_EQ(HttpInternalConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool,
             pEasyHttpInternal->getCorePoolSizeOfAsyncThreadPool());
 }
 
@@ -134,7 +134,7 @@ TEST(EasyHttpInternalUnitTest, getMaximumPoolSizeOfAsyncThreadPool_ReturnsFive_w
 
     // When: getMaximumPoolSizeOfAsyncThreadPool
     // Then: get default value
-    EXPECT_EQ(HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool,
+    EXPECT_EQ(HttpInternalConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool,
             pEasyHttpInternal->getMaximumPoolSizeOfAsyncThreadPool());
 }
 

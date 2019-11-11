@@ -7,11 +7,12 @@
 
 #include "Poco/SharedPtr.h"
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
 
-class RequestBodyForSharedPtrByteBuffer : public RequestBody {
+class EASYHTTPCPP_HTTP_INTERNAL_API RequestBodyForSharedPtrByteBuffer : public RequestBody {
 public:
     RequestBodyForSharedPtrByteBuffer(MediaType::Ptr pMediaType,
         Poco::SharedPtr<easyhttpcpp::common::ByteArrayBuffer> pContent);

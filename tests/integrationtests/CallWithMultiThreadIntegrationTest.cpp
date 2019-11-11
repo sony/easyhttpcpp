@@ -491,10 +491,9 @@ TEST_F(CallWithMultiThreadIntegrationTest,
     EXPECT_TRUE(execute2.isSuccess()) << execute2.getErrorMessage();
 
     const std::string& url = execute1.getUrl();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // latest response body (handler2, execute2) is cached.
     size_t expectResponseBodySize = handler2.getResponseBodySize();
@@ -550,10 +549,9 @@ TEST_F(CallWithMultiThreadIntegrationTest,
 
     // latest response is cached.
     const std::string& url = m_pExecutes[0]->getUrl();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // latest response body is cached.
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -593,10 +591,9 @@ TEST_F(CallWithMultiThreadIntegrationTest,
     std::string responseBody = pResponse->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // http request by thread
     Poco::ThreadPool threadPool;
@@ -625,8 +622,7 @@ TEST_F(CallWithMultiThreadIntegrationTest,
         EXPECT_TRUE(m_pExecutes[i]->isSuccess()) << m_pExecutes[i]->getErrorMessage();
     }
 
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // latest response body is cached.
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -701,10 +697,9 @@ TEST_F(CallWithMultiThreadIntegrationTest,
         EXPECT_TRUE(m_pExecutes[i]->isSuccess()) << m_pExecutes[i]->getErrorMessage();
     }
 
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // latest response body is cached.
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,

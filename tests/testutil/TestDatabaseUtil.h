@@ -7,10 +7,12 @@
 
 #include "Poco/Path.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class TestDatabaseUtil {
+class EASYHTTPCPP_TESTUTIL_API TestDatabaseUtil {
 public:
     static bool isTableExist(const Poco::Path& databasePath, unsigned int version, const std::string& tableName);
 private:

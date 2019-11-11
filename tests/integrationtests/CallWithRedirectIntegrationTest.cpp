@@ -50,9 +50,6 @@ static const std::string Tag = "CallWithRedirectIntegrationTest";
 static const char* const RedirectPath = "/redirect";
 static const char* const HeaderLocation = "Location";
 static const char* const RedirectResponseBody = "redirect data 1";
-static const char* const TestDataForValidCert = "/HttpIntegrationTest/02_https_localhost_cert/cert/";
-static const char* const ServerCertFile = "server/server.pem";
-static const char* const ValidRootCaFile = "client/localhost_rootCa.pem";
 
 class CallWithRedirectIntegrationTest : public HttpIntegrationTestCase {
 protected:
@@ -357,13 +354,14 @@ TEST_F(CallWithRedirectIntegrationTest, execute_StoresRedirectResponseToCache_Wh
     EXPECT_EQ(HttpTestConstants::DefaultResponseBody, responseBody);
 
     // check redirect response in database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    EXPECT_EQ(url, metadata1.getUrl());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT, metadata1.getStatusCode());
-    EXPECT_EQ(strlen(RedirectResponseBody), metadata1.getResponseBodySize());
+    pMetadata1 = db.getMetadataAll(key1);
+    ASSERT_FALSE(pMetadata1.isNull());
+    EXPECT_EQ(url, pMetadata1->getUrl());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT, pMetadata1->getStatusCode());
+    EXPECT_EQ(strlen(RedirectResponseBody), pMetadata1->getResponseBodySize());
 
     // check cached response body
     size_t expectResponseBodySize1 = strlen(RedirectResponseBody);
@@ -377,13 +375,14 @@ TEST_F(CallWithRedirectIntegrationTest, execute_StoresRedirectResponseToCache_Wh
     EXPECT_EQ(0, memcmp(inBuffer1.begin(), RedirectResponseBody, expectResponseBodySize1));
 
     // check user response in database
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
     std::string url2 = getRedirectSecondUrl();
     std::string key2 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url2);
-    EXPECT_TRUE(db.getMetadataAll(key2, metadata2));
-    EXPECT_EQ(url2, metadata2.getUrl());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), metadata2.getResponseBodySize());
+    pMetadata2 = db.getMetadataAll(key2);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(url2, pMetadata2->getUrl());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), pMetadata2->getResponseBodySize());
     
     // check cached response body
     size_t expectResponseBodySize2 = strlen(HttpTestConstants::DefaultResponseBody);
@@ -489,56 +488,6 @@ TEST_F(CallWithRedirectIntegrationTest,
     Response::Ptr pPriorResponse = pResponse->getPriorResponse();
     EXPECT_TRUE(pPriorResponse.isNull());
     EXPECT_EQ(getRedirectToHttpsUrl(), pResponse->getHeaderValue(HeaderLocation, ""));
-
-    // check response body
-    std::string responseBody = pResponse->getBody()->toString();
-    EXPECT_EQ(RedirectResponseBody, responseBody);
-}
-
-// https から http へのredirect
-// redirect なしでresponse が返る。
-TEST_F(CallWithRedirectIntegrationTest,
-        execute_ReturnsResponseWithoutRedirect_WhenGetMethodAndHttpStatusCodeIsTemporaryRedirectAndRedirectToHttpFromHttps)
-{
-    // load cert data
-    std::string certRootParentDir = HttpTestUtil::getDefaultCertRootParentDir();
-    Poco::File file(certRootParentDir);
-    file.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForValidCert);
-    srcTestData.copyTo(certRootParentDir);
-
-    // Given: set https to http redirect handler
-    HttpsTestServer testServer;
-    RedirectToHttpRequestHandler handler;
-    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler);
-
-    // set cert and start server
-    std::string certRootDir = HttpTestUtil::getDefaultCertRootDir();
-    testServer.setCertUnitedFile(certRootDir + ServerCertFile);
-    testServer.start(HttpTestConstants::DefaultHttpsPort);
-
-    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
-    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())),
-            intercept(testing::_)).WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
-
-    EasyHttp::Builder httpClientBuilder;
-    EasyHttp::Ptr pHttpClient = httpClientBuilder.addNetworkInterceptor(pMockNetworkInterceptor).
-            setRootCaFile(certRootDir + ValidRootCaFile).build();
-    Request::Builder requestBuilder;
-    std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Https, HttpTestConstants::DefaultHost,
-            HttpTestConstants::DefaultHttpsPort, HttpTestConstants::DefaultPath);
-    Request::Ptr pRequest = requestBuilder.setUrl(url).build();
-    Call::Ptr pCall = pHttpClient->newCall(pRequest);
-
-    // When: execute GET method.
-    Response::Ptr pResponse = pCall->execute();
-
-    // Then: receive response without redirect
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_TEMPORARY_REDIRECT, pResponse->getCode());
-    EXPECT_EQ(url, pResponse->getRequest()->getUrl());
-    Response::Ptr pPriorResponse = pResponse->getPriorResponse();
-    EXPECT_TRUE(pPriorResponse.isNull());
-    EXPECT_EQ(getRedirectToHttpUrl(), pResponse->getHeaderValue(HeaderLocation, ""));
 
     // check response body
     std::string responseBody = pResponse->getBody()->toString();

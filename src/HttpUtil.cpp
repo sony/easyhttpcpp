@@ -14,10 +14,10 @@
 
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/StringUtil.h"
-#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 #include "easyhttpcpp/messagedigest/DigestUtil.h"
 
+#include "HttpInternalConstants.h"
 #include "HttpUtil.h"
 
 using easyhttpcpp::common::StringUtil;
@@ -84,7 +84,7 @@ std::string HttpUtil::makeCacheKey(Request::HttpMethod httpMethod, const std::st
 
 std::string HttpUtil::makeCachedResponseBodyFilename(const Poco::Path& cacheRootDir, const std::string& key)
 {
-    Poco::Path filename(cacheRootDir, key + HttpConstants::Caches::DataFileExtention);
+    Poco::Path filename(cacheRootDir, key + HttpInternalConstants::Caches::DataFileExtention);
     return filename.toString();
 }
 

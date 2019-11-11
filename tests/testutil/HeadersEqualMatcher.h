@@ -9,11 +9,12 @@
 #include "gmock/gmock.h"
 
 #include "easyhttpcpp/Headers.h"
+#include "TestUtilExports.h"
 
 namespace easyhttpcpp {
 namespace testutil {
 
-class HeadersEqualMatcher {
+class EASYHTTPCPP_TESTUTIL_API HeadersEqualMatcher {
 public:
     HeadersEqualMatcher(easyhttpcpp::Headers::Ptr pHeaders);
 

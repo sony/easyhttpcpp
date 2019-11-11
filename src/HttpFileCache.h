@@ -11,13 +11,15 @@
 #include "easyhttpcpp/common/CacheMetadata.h"
 #include "easyhttpcpp/common/CacheStrategyListener.h"
 #include "easyhttpcpp/common/LruCacheByDataSizeStrategy.h"
+#include "easyhttpcpp/db/SqlException.h"
+#include "easyhttpcpp/HttpExports.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpCacheEnumerationListener.h"
 
 namespace easyhttpcpp {
 
-class HttpFileCache : public easyhttpcpp::common::Cache,
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpFileCache : public easyhttpcpp::common::Cache,
 public easyhttpcpp::common::CacheStrategyListener<std::string,
         easyhttpcpp::common::CacheInfoWithDataSize::Ptr>, public HttpCacheEnumerationListener {
 public:
@@ -50,14 +52,15 @@ private:
     bool removeInternal(const std::string& key); 
     std::string makeCachedFilename(const std::string& key);
     void cleanupCache(const std::string& key);
-    bool initializeCache();
+    void initializeCache();
     void deleteCacheFile();
+    void deleteCorruptedCacheFile(const std::string& funcName, const easyhttpcpp::db::SqlException& e);
 
     Poco::FastMutex m_instanceMutex;
     bool m_cacheInitialized;
     Poco::Path m_cacheRootDir;
     size_t m_maxSize;
-    HttpCacheDatabase::Ptr m_metadataDb;
+    HttpCacheDatabase::Ptr m_pMetadataDb;
     easyhttpcpp::common::LruCacheByDataSizeStrategy::Ptr m_lruCacheStrategy;
 };
 

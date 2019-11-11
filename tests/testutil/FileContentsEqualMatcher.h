@@ -10,10 +10,12 @@
 
 #include "Poco/File.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class FileContentsEqualMatcher {
+class EASYHTTPCPP_TESTUTIL_API FileContentsEqualMatcher {
 public:
     FileContentsEqualMatcher(const char* pExpectedData, size_t expectedDataBytes);
     virtual ~FileContentsEqualMatcher();

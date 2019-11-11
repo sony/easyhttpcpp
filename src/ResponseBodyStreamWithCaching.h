@@ -8,10 +8,12 @@
 #include <fstream>
 
 #include "Poco/File.h"
+#include "Poco/FileStream.h"
 #include "Poco/Path.h"
 #include "Poco/SharedPtr.h"
 
 #include "easyhttpcpp/HttpCache.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Response.h"
 
 #include "ConnectionInternal.h"
@@ -21,7 +23,7 @@
 
 namespace easyhttpcpp {
 
-class ResponseBodyStreamWithCaching : public ResponseBodyStreamInternal {
+class EASYHTTPCPP_HTTP_INTERNAL_API ResponseBodyStreamWithCaching : public ResponseBodyStreamInternal {
 public:
     ResponseBodyStreamWithCaching(std::istream& content, ConnectionInternal::Ptr pConnectionInternal,
             ConnectionPoolInternal::Ptr pConnectionPoolInternal, Response::Ptr pResponse, HttpCache::Ptr pHttpCache);
@@ -43,7 +45,7 @@ private:
     Response::Ptr m_pResponse;
     HttpCache::Ptr m_pHttpCache;
     std::string m_tempFilePath;
-    std::ofstream* m_pTempFileStream;
+    Poco::FileOutputStream* m_pTempFileStream;
     ssize_t m_writtenDataSize;
 };
 

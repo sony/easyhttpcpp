@@ -45,14 +45,18 @@ Response::Ptr NetworkLoggingInterceptor::intercept(Interceptor::Chain& chain)
         EASYHTTPCPP_LOG_V(Tag, "<-- %d %s %s %s (%lld ms)\n%s <-- END %s %s",
                 pResponse->getCode(), pResponse->getMessage().c_str(),
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str(),
-                (start.elapsed() / 1000), pResponse->getHeaders()->toString().c_str(),
+                // elapsed() return Poco::Timestamp::TimeDiff. Poco::Timestamp::TimeDiff is static cast necessary 
+                // because byte size is different between 64 bit build and 32 bit build.
+                static_cast<signed long long> (start.elapsed() / 1000), pResponse->getHeaders()->toString().c_str(),
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str());
 
         return pResponse;
     } catch (const HttpException& e) {
         EASYHTTPCPP_LOG_V(Tag, "<-- FAILED %s %s (%lld ms)\nError: %s <-- END %s %s",
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str(),
-                (start.elapsed() / 1000), e.getMessage().c_str(),
+                // elapsed() return Poco::Timestamp::TimeDiff. Poco::Timestamp::TimeDiff is static cast necessary 
+                // because byte size is different between 64 bit build and 32 bit build.
+                static_cast<signed long long> (start.elapsed() / 1000), e.getMessage().c_str(),
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str());
 
         throw;

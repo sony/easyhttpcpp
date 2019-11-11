@@ -6,10 +6,6 @@
 
 namespace easyhttpcpp {
 
-const char* const HttpConstants::Caches::DataFileExtention = ".data";
-const char* const HttpConstants::Caches::CacheDir = "cache/";
-const char* const HttpConstants::Caches::TempDir = "temp/";
-
 const char* const HttpConstants::HeaderNames::Age = "Age";
 const char* const HttpConstants::HeaderNames::Authorization = "Authorization";
 const char* const HttpConstants::HeaderNames::CacheControl = "Cache-Control";
@@ -56,13 +52,5 @@ const char* const HttpConstants::CacheDirectives::SMaxAge = "s-maxage";
 
 const char* const HttpConstants::Schemes::Http = "http";
 const char* const HttpConstants::Schemes::Https = "https";
-
-const char* const HttpConstants::Database::FileName = "cache_metadata.db";
-const char* const HttpConstants::Database::TableName = "cache_metadata";
-const unsigned int HttpConstants::Database::Version = 1;
-
-const unsigned int HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool = 2;
-const unsigned int HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool = 5;
-
 
 } /* namespace easyhttpcpp */

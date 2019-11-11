@@ -369,10 +369,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest, close_NotStoresCache_WhenTh
     pResponseBodyStream->close();
 
     // Then: not store to cache
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 }
 
 // Call::execute、Cache 使用で、Response の Content-Length 無の時、ResponseBody を全て readする前に、close
@@ -416,10 +415,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
 
     // Then: not store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -464,10 +462,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
 
     // Then: not store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -518,11 +515,9 @@ TEST_F(ResponseBodyStreamWithCachingIntegrationTest,
     pResponseBodyStream->close();
 
     // Then: not store to cache
-    // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    // database is not created.
+    Poco::File dbFile(HttpTestUtil::createDatabasePath(cachePath));
+    EXPECT_FALSE(dbFile.exists());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,

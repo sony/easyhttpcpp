@@ -23,7 +23,8 @@ namespace db {
 namespace test {
 
 namespace {
-const std::string DatabaseDirString = SqliteDatabaseIntegrationTestConstants::DatabaseDir;
+const std::string DatabaseDirString =
+        FileUtil::convertToAbsolutePathString(SqliteDatabaseIntegrationTestConstants::DatabaseDir);
 const std::string DatabaseFileName = SqliteDatabaseIntegrationTestConstants::DatabaseFileName;
 } /* namespace */
 

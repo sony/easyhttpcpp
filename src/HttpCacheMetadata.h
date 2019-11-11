@@ -12,12 +12,15 @@
 
 #include "easyhttpcpp/common/CacheMetadata.h"
 #include "easyhttpcpp/Headers.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 
 namespace easyhttpcpp {
 
-class HttpCacheMetadata : public easyhttpcpp::common::CacheMetadata {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheMetadata : public easyhttpcpp::common::CacheMetadata {
 public:
+    typedef Poco::AutoPtr<HttpCacheMetadata> Ptr;
+
     HttpCacheMetadata();
     ~HttpCacheMetadata();
 

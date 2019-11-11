@@ -83,7 +83,7 @@ void QueuedThreadPool::start(RefCountedRunnable::Ptr pTask)
             m_pThreadPool->start(static_cast<Poco::Runnable&> (*pWorker));
 
             m_activeWorkerCount++;
-        } catch (const Poco::NoThreadAvailableException& e) {
+        } catch (const Poco::NoThreadAvailableException&) {
             if (m_activeWorkerCount == 0) {
                 // Retry because Thread can be used soon
                 Poco::Thread::sleep(1);

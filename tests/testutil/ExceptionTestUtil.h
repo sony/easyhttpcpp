@@ -139,7 +139,7 @@ static const char* const ExceptionMessagePrefix = "EASYHTTPCPP-ERR-";
             throw TARGETCLS(message1, Poco::Exception("Poco"));                                                     \
         } catch (const easyhttpcpp::common::BaseException& expectedException) {                                    \
             /* When: Copy exception by clone exception. */                                                          \
-            TARGETCLS::Ptr actualException = expectedException.clone();                                             \
+            easyhttpcpp::common::BaseException::Ptr actualException = expectedException.clone();                   \
             /* Then: Should be the same content. */                                                                 \
             EXPECT_EQ(expectedException.getCode(), actualException->getCode());                                     \
             EXPECT_STREQ(expectedException.getMessage().c_str(), actualException->getMessage().c_str());            \
@@ -316,9 +316,9 @@ static const char* const ExceptionMessagePrefix = "EASYHTTPCPP-ERR-";
                     throw TARGETCLS(message1, e);                                                                   \
                 } catch (const TARGETCLS& e) {                                                                      \
                     /* Then : Nested exception can be acquired. */                                                  \
-                    TARGETCLS::Ptr nestedException1 = e.getCause();                                                 \
+                    easyhttpcpp::common::BaseException::Ptr nestedException1 = e.getCause();                       \
                     ASSERT_FALSE(nestedException1.isNull());                                                        \
-                    TARGETCLS::Ptr nestedException2 = nestedException1->getCause();                                 \
+                    easyhttpcpp::common::BaseException::Ptr nestedException2 = nestedException1->getCause();       \
                     ASSERT_FALSE(nestedException2.isNull());                                                        \
                     ASSERT_TRUE(nestedException2->getCause().isNull());                                             \
                     std::string expectedExceptionMessage =                                                          \
@@ -343,6 +343,49 @@ static const char* const ExceptionMessagePrefix = "EASYHTTPCPP-ERR-";
             GTEST_FAIL() << "Failed to catch target exception at first time.";                                      \
         }                                                                                                           \
     }
+
+////////////////////////////////////////////////////////////
+// Macro to test getResponseCode of AwsIotException
+//  TARGETCLS : target class for test
+//
+#define EASYHTTPCPP_AWSIOT_EXCEPTION_RESPONSECODE_UNIT_TEST(TARGETCLS, CODE)                                                \
+TEST(TARGETCLS##ResponseCodeUnitTest,                                                                               \
+        getAwsIotSdkResponseCode_GetSpecifiedResponseCode_When##TARGETCLS##IsCreatedWithResponseCodeSpecified)      \
+{                                                                                                                   \
+    /* Given: preparing the response code */                                                                        \
+    awsiotsdk::ResponseCode responseCode = awsiotsdk::ResponseCode::NETWORK_TCP_CONNECT_ERROR;                      \
+    std::string dummyMessage = "dummy error message";                                                               \
+    std::string expectedMessage = easyhttpcpp::common::StringUtil::format("%s%u: %s",                              \
+        easyhttpcpp::testutil::ExceptionMessagePrefix, CODE, dummyMessage.c_str());                                \
+    /* When: give the created responseCode to the exception */                                                      \
+    TARGETCLS exception(dummyMessage, responseCode);                                                                \
+    /* Then: get the given response code and message */                                                             \
+    EXPECT_EQ(responseCode, exception.getAwsIotSdkResponseCode());                                                  \
+    EXPECT_STREQ(expectedMessage.c_str(), exception.getMessage().c_str());                                          \
+}                                                                                                                   \
+TEST(TARGETCLS##ResponseCodeUnitTest,                                                                               \
+        ptr_GetSpecifiedResponseCodeUsingSharedPtr_When##TARGETCLS##IsCreatedWithResponseCodeSpecified)             \
+{                                                                                                                   \
+    /* Given: preparing the response code */                                                                        \
+    awsiotsdk::ResponseCode responseCode = awsiotsdk::ResponseCode::NETWORK_TCP_CONNECT_ERROR;                      \
+    std::string dummyMessage = "dummy error message";                                                               \
+    /* When: give the created responseCode to the exception and create to shared pointer */                         \
+    TARGETCLS::Ptr targetClassExceptionPtr = new TARGETCLS(dummyMessage, responseCode);                             \
+    /* Then: get the given response code by shared pointer */                                                       \
+    EXPECT_EQ(responseCode, targetClassExceptionPtr->getAwsIotSdkResponseCode());                                   \
+}                                                                                                                   \
+TEST(TARGETCLS##ResponseCodeUnitTest,                                                                               \
+        clone_CopiesResponseCode_When##TARGETCLS##IsCreatedWithResponseCodeSpecified)                               \
+{                                                                                                                   \
+    /* Given: preparing the response code */                                                                        \
+    awsiotsdk::ResponseCode responseCode = awsiotsdk::ResponseCode::NETWORK_TCP_CONNECT_ERROR;                      \
+    std::string dummyMessage = "dummy error message";                                                               \
+    /* When: copy response code by cloned exception */                                                              \
+    TARGETCLS expectedException(dummyMessage, responseCode);                                                        \
+    TARGETCLS::Ptr actualException = expectedException.clone();                                                     \
+    /* Then: should be the same response code */                                                                    \
+    EXPECT_EQ(expectedException.getAwsIotSdkResponseCode(), actualException->getAwsIotSdkResponseCode());           \
+}
 
 } /* namespace testutil */
 } /* namespace easyhttpcpp */

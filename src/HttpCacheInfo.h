@@ -6,10 +6,11 @@
 #define EASYHTTPCPP_HTTPCACHEINFO_H_INCLUDED
 
 #include "easyhttpcpp/common/CacheInfoWithDataSize.h"
+#include "easyhttpcpp/HttpExports.h"
 
 namespace easyhttpcpp {
 
-class HttpCacheInfo : public easyhttpcpp::common::CacheInfoWithDataSize {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheInfo : public easyhttpcpp::common::CacheInfoWithDataSize {
 public:
     HttpCacheInfo(const std::string& key, size_t dataSize = 0);
     HttpCacheInfo(const HttpCacheInfo& original);

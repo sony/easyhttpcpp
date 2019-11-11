@@ -209,6 +209,7 @@ TEST_F(ResponseBodyStreamWithReusedConnectionIntegrationTest,
 // local server (https)
 // Connection:Close
 // Connection はConnectionPool から削除される。
+// Windows (FLUX) では RootCA ファイル、RootCA ディレクトリの設定をサポートしないためテストをスキップします。
 TEST_F(ResponseBodyStreamWithReusedConnectionIntegrationTest,
         close_RemovesConnectionFromConnectionPool_WhenSchemeIsHttpsAndReuseConnectionAndResponseContainsConnectionClose)
 {
@@ -288,6 +289,7 @@ TEST_F(ResponseBodyStreamWithReusedConnectionIntegrationTest,
 // local server (https)
 // response に Connection なし
 // Connection はConnectionPool に とうろくされたまま。
+// Windows (FLUX) では RootCA ファイル、RootCA ディレクトリの設定をサポートしないためテストをスキップします。
 TEST_F(ResponseBodyStreamWithReusedConnectionIntegrationTest,
         close_DoesNotRemoveConnectionFromConnectionPool_WhenSchemeIsHttpsAndReuseConnectionAndResponseDoesNotContainConnection)
 {

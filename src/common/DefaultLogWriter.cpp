@@ -62,7 +62,7 @@ void DefaultLogWriter::log(const std::string& tag, LogLevel level, unsigned int 
             default:
                 break;
         }
-    } catch (const Poco::Exception& ignored) {
+    } catch (const Poco::Exception&) {
         // Occurred exception at Poco's internal. Ignore because it can't do anything.
     }
 }
@@ -103,7 +103,7 @@ Poco::AutoPtr<Poco::FormattingChannel> DefaultLogWriter::createChannel()
         pFCConsole->setProperty("debugColor", "default");
         pFCConsole->setProperty("traceColor", "default");
         pFCConsole->open();
-    } catch (const Poco::Exception& ignored) {
+    } catch (const Poco::Exception&) {
         // Occurred exception at Poco's internal. Ignore because it can't do anything.
     }
 

@@ -76,5 +76,12 @@ const BaseException::Ptr BaseException::getCause() const
     return m_pCause;
 }
 
+std::string BaseException::createExceptionMessage(const std::string& rawMessage)
+{
+    return StringUtil::format("%s%u: %s", ExceptionConstants::ErrorCodePrefix.c_str(), getCode(),
+            rawMessage.empty() ? BaseException::DefaultExceptionMessage.c_str() :
+            rawMessage.c_str());
+}
+
 } /* namespace common */
 } /* namespace easyhttpcpp */

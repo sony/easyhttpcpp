@@ -5,11 +5,12 @@
 #ifndef EASYHTTPCPP_REQUESTBODYFORBYTEBUFFER_H_INCLUDED
 #define EASYHTTPCPP_REQUESTBODYFORBYTEBUFFER_H_INCLUDED
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
 
-class RequestBodyForByteBuffer : public RequestBody {
+class EASYHTTPCPP_HTTP_INTERNAL_API RequestBodyForByteBuffer : public RequestBody {
 public:
     RequestBodyForByteBuffer(MediaType::Ptr pMediaType, const easyhttpcpp::common::ByteArrayBuffer& content);
     virtual ~RequestBodyForByteBuffer();

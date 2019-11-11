@@ -19,6 +19,7 @@ public:
     static bool removeDirsIfPresent(const Poco::Path& dirPath);
     static bool removeFileIfPresent(const Poco::File& file);
     static bool moveFile(const Poco::File& sourceFile, const Poco::File& destinationFile);
+    static std::string convertToAbsolutePathString(const std::string& path, bool extendedPrefix = false);
 
 private:
     FileUtil();

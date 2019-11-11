@@ -6,12 +6,12 @@
 
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/EasyHttp.h"
-#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 
 #include "CallInternal.h"
 #include "EasyHttpContext.h"
 #include "EasyHttpInternal.h"
+#include "HttpInternalConstants.h"
 
 namespace easyhttpcpp {
 
@@ -27,8 +27,9 @@ EasyHttp::~EasyHttp()
 
 EasyHttp::Builder::Builder() : m_timeoutSec(EasyHttpContext::DefaultTimeoutSec),
         m_crlCheckPolicy(CrlCheckPolicyNoCheck),
-        m_corePoolSizeOfAsyncThreadPool(HttpConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool),
-        m_maximumPoolSizeOfAsyncThreadPool(HttpConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool)
+        m_corePoolSizeOfAsyncThreadPool(HttpInternalConstants::AsyncRequests::DefaultCorePoolSizeOfAsyncThreadPool),
+        m_maximumPoolSizeOfAsyncThreadPool(
+                HttpInternalConstants::AsyncRequests::DefaultMaximumPoolSizeOfAsyncThreadPool)
 
 {
 }

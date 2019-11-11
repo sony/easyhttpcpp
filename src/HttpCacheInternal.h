@@ -13,6 +13,7 @@
 #include "easyhttpcpp/common/Cache.h"
 #include "easyhttpcpp/common/CacheManager.h"
 #include "easyhttpcpp/HttpCache.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
 
@@ -22,7 +23,7 @@ namespace easyhttpcpp {
 
 class HttpCacheMetadata;
 
-class HttpCacheInternal : public HttpCache {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheInternal : public HttpCache {
 public:
     HttpCacheInternal(const Poco::Path& path, size_t maxSize);
     virtual ~HttpCacheInternal();

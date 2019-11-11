@@ -83,8 +83,10 @@ TEST_F(EasyHttpIntegrationTest, destructor_CancelsAsynchronousRequest_WhenAsynch
     // Then: destructor 呼び出しの間に、非同期要求が cancel される。
     handler.set();
     EXPECT_TRUE(pCallback->waitCompletion());
-    EXPECT_LT(beforeReleaseTime, pCallback->getCompletionTime());
-    EXPECT_GT(afterReleaseTime, pCallback->getCompletionTime());
+    // Windows は時間取得の精度が低く、15ms 未満の間に Poco::Timestamp で時間を取得した場合、
+    // 同じ時間が入る事がある為、EXPECT_LE/EXPECT_GE で verify します.
+    EXPECT_LE(beforeReleaseTime, pCallback->getCompletionTime());
+    EXPECT_GE(afterReleaseTime, pCallback->getCompletionTime());
     // onFailure is called and what is HttpExecutionException.
     EXPECT_TRUE(pCallback->getResponse().isNull());
     HttpException::Ptr pWhat = pCallback->getWhat();
@@ -160,8 +162,10 @@ TEST_F(EasyHttpIntegrationTest, destructor_CancelsAllAsynchronousTask_WhenWaitin
     }
     for (int i = 0; i <= inAdvanceCallCount; i++) {
         EXPECT_TRUE(callbacks[i]->waitCompletion()) << StringUtil::format("id=%u", i);
-        EXPECT_LT(beforeReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
-        EXPECT_GT(afterReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
+        // Windows は時間取得の精度が低く、15ms 未満の間に Poco::Timestamp で時間を取得した場合、
+        // 同じ時間が入る事がある為、EXPECT_LE/EXPECT_GE で verify します.
+        EXPECT_LE(beforeReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
+        EXPECT_GE(afterReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
         // onFailure is called and what is HttpExecutionException.
         EXPECT_TRUE(callbacks[i]->getResponse().isNull()) << StringUtil::format("id=%u", i);
         HttpException::Ptr pWhat = callbacks[i]->getWhat();
@@ -230,8 +234,10 @@ TEST_F(EasyHttpIntegrationTest, invalidateAndCancel_CancelsAsynchronousRequest_W
     // Then: invalidateAndCancel 呼び出しの間に、非同期要求が cancel される。
     handler.set();
     EXPECT_TRUE(pCallback->waitCompletion());
-    EXPECT_LT(beforeReleaseTime, pCallback->getCompletionTime());
-    EXPECT_GT(afterReleaseTime, pCallback->getCompletionTime());
+    // Windows は時間取得の精度が低く、15ms 未満の間に Poco::Timestamp で時間を取得した場合、
+    // 同じ時間が入る事がある為、EXPECT_LE/EXPECT_GE で verify します.
+    EXPECT_LE(beforeReleaseTime, pCallback->getCompletionTime());
+    EXPECT_GE(afterReleaseTime, pCallback->getCompletionTime());
     // onFailure is called and what is HttpExecutionException.
     EXPECT_TRUE(pCallback->getResponse().isNull());
     HttpException::Ptr pWhat = pCallback->getWhat();
@@ -307,8 +313,10 @@ TEST_F(EasyHttpIntegrationTest, invalidateAndCancel_CancelsAllAsynchronousTask_W
     }
     for (int i = 0; i <= inAdvanceCallCount; i++) {
         EXPECT_TRUE(callbacks[i]->waitCompletion()) << StringUtil::format("id=%u", i);
-        EXPECT_LT(beforeReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
-        EXPECT_GT(afterReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
+        // Windows は時間取得の精度が低く、15ms 未満の間に Poco::Timestamp で時間を取得した場合、
+        // 同じ時間が入る事がある為、EXPECT_LE/EXPECT_GE で verify します.
+        EXPECT_LE(beforeReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
+        EXPECT_GE(afterReleaseTime, callbacks[i]->getCompletionTime()) << StringUtil::format("id=%u", i);
         // onFailure is called and what is HttpExecutionException.
         EXPECT_TRUE(callbacks[i]->getResponse().isNull()) << StringUtil::format("id=%u", i);
         HttpException::Ptr pWhat = callbacks[i]->getWhat();

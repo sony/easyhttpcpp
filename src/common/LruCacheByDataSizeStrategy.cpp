@@ -28,13 +28,17 @@ void LruCacheByDataSizeStrategy::setListener(LruCacheByDataSizeStrategyListener*
 
 bool LruCacheByDataSizeStrategy::add(const std::string& key, CacheInfoWithDataSize::Ptr pCacheInfo)
 {
+    if (!pCacheInfo) {
+        EASYHTTPCPP_LOG_D(Tag, "add: pCacheInfo is NULL.");
+        return false;
+    }
     bool ret = true;
     if (m_pListener != NULL) {
         ret = m_pListener->onAdd(key, pCacheInfo);
         if (!ret) {
             EASYHTTPCPP_LOG_D(Tag, "add: onAdd return false.");
         }
-}
+    }
     if (ret) {
         ret = addOrUpdate(key, pCacheInfo);
     }
@@ -43,6 +47,10 @@ bool LruCacheByDataSizeStrategy::add(const std::string& key, CacheInfoWithDataSi
 
 bool LruCacheByDataSizeStrategy::update(const std::string& key, CacheInfoWithDataSize::Ptr pCacheInfo)
 {
+    if (!pCacheInfo) {
+        EASYHTTPCPP_LOG_D(Tag, "update: pCacheInfo is NULL.");
+        return false;
+    }
     bool ret = true;
     if (m_pListener != NULL) {
         ret = m_pListener->onUpdate(key, pCacheInfo);
@@ -112,6 +120,13 @@ bool LruCacheByDataSizeStrategy::clear(bool mayDeleteIfBusy)
         remove(*it);
     }
     return ret;
+}
+
+void LruCacheByDataSizeStrategy::reset()
+{
+    m_lruList.clear();
+    m_lruListMap.clear();
+    m_totalSize = 0;
 }
 
 bool LruCacheByDataSizeStrategy::makeSpace(size_t requestSize)

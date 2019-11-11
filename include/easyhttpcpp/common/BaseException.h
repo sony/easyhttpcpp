@@ -87,6 +87,13 @@ public:
 
     virtual void rethrow() const = 0;
 
+    /**
+     * @brief Create Exception Message.
+     * @param rawMessage
+     * @return the message text.
+     */
+    std::string createExceptionMessage(const std::string& rawMessage);
+
 protected:
     std::string m_message;
 
@@ -156,8 +163,6 @@ private:
         unsigned int getExceptionCode() const;                                          \
         CLS* clone() const;                                                             \
         void rethrow() const;                                                           \
-    private:                                                                            \
-        virtual std::string createExceptionMessage(const std::string& rawMessage);      \
     };
 
 #define EASYHTTPCPP_IMPLEMENT_EXCEPTION(CLS, BASE, CODE)                                                                    \
@@ -183,13 +188,6 @@ private:
     void CLS::rethrow() const                                                                                       \
     {                                                                                                               \
         throw *this;                                                                                                \
-    }                                                                                                               \
-    std::string CLS::createExceptionMessage(const std::string& rawMessage)                                          \
-    {                                                                                                               \
-        return easyhttpcpp::common::StringUtil::format("%s%u: %s",                                                 \
-                easyhttpcpp::common::ExceptionConstants::ErrorCodePrefix.c_str(), getCode(),                       \
-                rawMessage.empty() ? easyhttpcpp::common::BaseException::DefaultExceptionMessage.c_str() :         \
-                rawMessage.c_str());                                                                                \
     }
 
 } /* namespace common */

@@ -10,6 +10,8 @@
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 
+#include "FileUtilImpl.h"
+
 namespace easyhttpcpp {
 namespace common {
 
@@ -18,8 +20,12 @@ static const std::string Tag = "FileUtil";
 bool FileUtil::createDirsIfAbsent(const Poco::File& dir)
 {
     try {
-        Poco::File dirTobeCreated(dir);
+        if (dir.path().empty()) {
+            EASYHTTPCPP_LOG_D(Tag, "dir is empty.");
+            return false;
+        }
 
+        Poco::File dirTobeCreated(convertToAbsolutePathString(dir.path()));
         if (dirTobeCreated.exists()) {
             return true;
         }
@@ -36,7 +42,12 @@ bool FileUtil::createDirsIfAbsent(const Poco::File& dir)
 bool FileUtil::removeDirsIfPresent(const Poco::Path& dirPath)
 {
     try {
-        Poco::File dirTobeDeleted(dirPath);
+        if (dirPath.toString().empty()) {
+            EASYHTTPCPP_LOG_D(Tag, "dirPath is empty.");
+            return false;
+        }
+
+        Poco::File dirTobeDeleted(convertToAbsolutePathString(dirPath.toString()));
         if (!dirTobeDeleted.exists()) {
             return true;
         }
@@ -57,7 +68,7 @@ bool FileUtil::removeDirsIfPresent(const Poco::Path& dirPath)
 bool FileUtil::removeFileIfPresent(const Poco::File& file)
 {
     try {
-        Poco::File fileToBeDeleted(file);
+        Poco::File fileToBeDeleted(convertToAbsolutePathString(file.path()));
         if (!fileToBeDeleted.exists()) {
             return true;
         }
@@ -76,18 +87,19 @@ bool FileUtil::removeFileIfPresent(const Poco::File& file)
 
 bool FileUtil::moveFile(const Poco::File& sourceFile, const Poco::File& destinationFile)
 {
-    if (!sourceFile.exists() || !sourceFile.isFile()) {
+    Poco::File absoluteSourceFile(convertToAbsolutePathString(sourceFile.path()));
+    if (!absoluteSourceFile.exists() || !absoluteSourceFile.isFile()) {
         // sourceFile must be an existing file
         return false;
     }
 
-    if (destinationFile.exists()) {
-        std::string sourceFileAbsolutePath = Poco::Path(sourceFile.path()).absolute().toString();
-        std::string destinationFileAbsolutePath = Poco::Path(destinationFile.path()).absolute().toString();
+    Poco::File absoluteDestinationFile(convertToAbsolutePathString(destinationFile.path()));
+    if (absoluteDestinationFile.exists()) {
+        std::string sourceFileAbsolutePath = absoluteSourceFile.path();
+        std::string destinationFileAbsolutePath = absoluteDestinationFile.path();
         if (destinationFileAbsolutePath == sourceFileAbsolutePath) {
             // if destination and source are same, it is not necessary to move
-            EASYHTTPCPP_LOG_I(Tag, "Move is not necessary because source file and destination file are same.");
-            EASYHTTPCPP_LOG_V(Tag, "Move is not necessary because source file and destination file are same [%s]",
+            EASYHTTPCPP_LOG_D(Tag, "Move is not necessary because source file and destination file are same [%s]",
                     destinationFile.path().c_str());
             return true;
         }
@@ -96,7 +108,7 @@ bool FileUtil::moveFile(const Poco::File& sourceFile, const Poco::File& destinat
         EASYHTTPCPP_LOG_V(Tag, "Overwriting existing file[%s] before replacing it with %s", destinationFile.path().c_str(),
                 sourceFile.path().c_str());
 
-        if (!removeFileIfPresent(destinationFile)) {
+        if (!removeFileIfPresent(absoluteDestinationFile)) {
             EASYHTTPCPP_LOG_D(Tag, "Failed to delete existing destination file[%s] while moving from source file[%s]. "
                     "This might cause renameTo operation to fail.",
                     destinationFile.path().c_str(), sourceFile.path().c_str());
@@ -106,8 +118,7 @@ bool FileUtil::moveFile(const Poco::File& sourceFile, const Poco::File& destinat
     }
 
     try {
-        Poco::File fileToBeMoved(sourceFile);
-        fileToBeMoved.renameTo(destinationFile.path());
+        absoluteSourceFile.renameTo(absoluteDestinationFile.path());
 
         return true;
     } catch (const Poco::Exception& e) {
@@ -116,6 +127,11 @@ bool FileUtil::moveFile(const Poco::File& sourceFile, const Poco::File& destinat
 
         return false;
     }
+}
+
+std::string FileUtil::convertToAbsolutePathString(const std::string& path, bool extendedPrefix)
+{
+    return FileUtilImpl::convertToAbsolutePathString(path, extendedPrefix);
 }
 
 } /* namespace common */

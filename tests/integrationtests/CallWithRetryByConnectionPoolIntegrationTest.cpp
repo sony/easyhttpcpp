@@ -126,6 +126,7 @@ TEST_F(CallWithRetryByConnectionPoolIntegrationTest,
 // 2. SSL Exception をはっせいさせる。
 // 確認項目
 // retry なしで、HttpSslException が throw される。
+// Windows (FLUX) では RootCA ファイル、RootCA ディレクトリの設定をサポートしないためテストをスキップします。
 TEST_F(CallWithRetryByConnectionPoolIntegrationTest,
         execute_ThrowsSslExceptionWithoutRetryConnection_WhenNoReusedConnectionAndNotSpecifiedRootCa)
 {

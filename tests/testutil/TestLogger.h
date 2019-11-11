@@ -10,6 +10,7 @@
 #include "Poco/SingletonHolder.h"
 
 #include "easyhttpcpp/common/BaseLogger.h"
+#include "TestUtilExports.h"
 
 #define EASYHTTPCPP_TESTLOG_E(tag, pFormat, ...) \
         EASYHTTPCPP_BASE_LOG_E(easyhttpcpp::testutil::TestLogger::getInstance(), tag, pFormat, ##__VA_ARGS__)
@@ -45,7 +46,7 @@ namespace testutil {
  *
  * "EASYHTTPCPP_TEST_" will be appended to tags as prefix.
  */
-class TestLogger : public easyhttpcpp::common::BaseLogger {
+class EASYHTTPCPP_TESTUTIL_API TestLogger : public easyhttpcpp::common::BaseLogger {
 public:
     static TestLogger* getInstance();
 

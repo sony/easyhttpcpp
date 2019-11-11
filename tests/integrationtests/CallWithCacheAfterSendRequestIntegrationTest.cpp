@@ -36,6 +36,7 @@
 #include "HttpTestServer.h"
 #include "MockInterceptor.h"
 #include "TestDefs.h"
+#include "TestFileUtil.h"
 #include "TestLogger.h"
 #include "TimeInRangeMatcher.h"
 #include "HttpCacheDatabase.h"
@@ -47,6 +48,7 @@
 
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
+using easyhttpcpp::testutil::TestFileUtil;
 using easyhttpcpp::testutil::HttpTestServer;
 using easyhttpcpp::testutil::MockInterceptor;
 
@@ -349,24 +351,25 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest, execute_ReturnsResponseAndS
     // check database
     std::time_t startSec = startTime.epochTime();
     std::time_t endSec = endTime.epochTime();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata));
-    EXPECT_EQ(key, metadata.getKey());
-    EXPECT_EQ(url, metadata.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata.getStatusMessage().c_str());
-    EXPECT_EQ(4, metadata.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    pMetadata = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_EQ(key, pMetadata->getKey());
+    EXPECT_EQ(url, pMetadata->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata->getStatusMessage().c_str());
+    EXPECT_EQ(4, pMetadata->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata->getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Length", "15"), testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), metadata.getResponseBodySize());
-    EXPECT_THAT(metadata.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), pMetadata->getResponseBodySize());
+    EXPECT_THAT(pMetadata->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -417,27 +420,28 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database
     std::time_t startSec = startTime.epochTime();
     std::time_t endSec = endTime.epochTime();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata));
-    EXPECT_EQ(key, metadata.getKey());
-    EXPECT_EQ(url, metadata.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata.getStatusMessage().c_str());
-    EXPECT_EQ(5, metadata.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    pMetadata = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_EQ(key, pMetadata->getKey());
+    EXPECT_EQ(url, pMetadata->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata->getStatusMessage().c_str());
+    EXPECT_EQ(5, pMetadata->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata->getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::containsInHeader("Transfer-Encoding", "chunked"),
         testutil::containsInHeader("Last-Modified", "Mon, 25 Jul 2016 10:13:43 GMT"),
         testutil::hasKeyInHeader("Date")));
 
-    EXPECT_EQ(responseBodyData.size(), metadata.getResponseBodySize());
-    EXPECT_THAT(metadata.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_EQ(responseBodyData.size(), pMetadata->getResponseBodySize());
+    EXPECT_THAT(pMetadata->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -485,25 +489,26 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database
     std::time_t startSec = startTime.epochTime();
     std::time_t endSec = endTime.epochTime();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata));
-    EXPECT_EQ(key, metadata.getKey());
-    EXPECT_EQ(url, metadata.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_NOT_FOUND, metadata.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata.getStatusMessage().c_str());
-    EXPECT_EQ(5, metadata.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    pMetadata = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_EQ(key, pMetadata->getKey());
+    EXPECT_EQ(url, pMetadata->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_NOT_FOUND, pMetadata->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata->getStatusMessage().c_str());
+    EXPECT_EQ(5, pMetadata->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata->getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Length", "15"), testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::containsInHeader("Cache-Control", "max-age=3600"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), metadata.getResponseBodySize());
-    EXPECT_THAT(metadata.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), pMetadata->getResponseBodySize());
+    EXPECT_THAT(pMetadata->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -546,10 +551,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 
     // Then: not store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // not exist cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -592,10 +596,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 
     // Then: not store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -638,10 +641,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 
     // Then: not store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -678,10 +680,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url
     DifferentResponseBodyRequestHandler2nd handler2nd;
@@ -715,22 +716,24 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database
     std::time_t startSec2 = startTime2.epochTime();
     std::time_t endSec2 = endTime2.epochTime();
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(key, metadata2.getKey());
-    EXPECT_EQ(url, metadata2.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
-    EXPECT_EQ(4, metadata2.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(key, pMetadata2->getKey());
+    EXPECT_EQ(url, pMetadata2->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata2->getStatusMessage().c_str());
+    EXPECT_EQ(4, pMetadata2->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(),
+        testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Length", "50"), testutil::containsInHeader("Content-Type", "text/html"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(strlen(DifferentResponseBody2), metadata2.getResponseBodySize());
-    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_EQ(strlen(DifferentResponseBody2), pMetadata2->getResponseBodySize());
+    EXPECT_THAT(pMetadata2->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -766,10 +769,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url
     HttpTestCommonRequestHandler::NotModifiedResponseRequestHandler2nd handler2nd;
@@ -803,24 +805,26 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database
     std::time_t startSec2 = startTime2.epochTime();
     std::time_t endSec2 = endTime2.epochTime();
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(key, metadata2.getKey());
-    EXPECT_EQ(url, metadata2.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
-    EXPECT_EQ(6, metadata2.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(key, pMetadata2->getKey());
+    EXPECT_EQ(url, pMetadata2->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata2->getStatusMessage().c_str());
+    EXPECT_EQ(6, pMetadata2->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(),
+        testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Length", "15"), testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::containsInHeader("Last-Modified", "Mon, 25 Jul 2016 10:13:43 GMT"),
         testutil::containsInHeader("Cache-Control", "max-age=3600"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), metadata2.getResponseBodySize());
-    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_EQ(strlen(HttpTestConstants::DefaultResponseBody), pMetadata2->getResponseBodySize());
+    EXPECT_THAT(pMetadata2->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
 
     // check cache response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -912,6 +916,95 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 }
 
 TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
+        execute_ReturnsResponseAndNotStoreToCache_WhenGetMethodAndAfterRequestThatHttpStatusIsNotModifiedAndCacheDbStoredInThePathThatExceedsWindowsMaxPathLimit)
+{
+    // Given: first request create cache.
+    //        second request receive Not Modified and receive from cache
+
+    HttpTestServer testServer;
+    HttpTestCommonRequestHandler::NotModifiedResponseRequestHandler1st handler1st;
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler1st);
+    testServer.start(HttpTestConstants::DefaultPort);
+
+    // create path for RUNTIME_DATA_ROOT/HttpCache/appendLongNameDir()/HttpCache/
+    // RUNTIME_DATA_ROOT/HttpCache is cleanup directory root in SetUp()
+    Poco::Path cachePath(HttpTestUtil::getDefaultCachePath());
+    TestFileUtil::appendLongPathDir(cachePath);
+    cachePath.append(Poco::Path("HttpCache"));
+    HttpCache::Ptr pCache = HttpCache::createCache(cachePath, HttpTestConstants::DefaultCacheMaxSize);
+
+    // first request
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder1;
+    EasyHttp::Ptr pHttpClient1 = httpClientBuilder1.setCache(pCache).build();
+    Request::Builder requestBuilder1;
+    std::string url = HttpTestConstants::DefaultTestUrlWithQuery;
+    Request::Ptr pRequest1 = requestBuilder1.setUrl(url).build();
+    Call::Ptr pCall1 = pHttpClient1->newCall(pRequest1);
+
+    // execute GET method.
+    Response::Ptr pResponse1 = pCall1->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse1->getCode());
+    ASSERT_TRUE(Poco::File(HttpTestUtil::createDatabasePath(cachePath.toString())).exists());
+
+    // read response body and close
+    std::string responseBody1 = pResponse1->getBody()->toString();
+
+    // second request
+
+    // GET same url
+    HttpTestCommonRequestHandler::NotModifiedResponseRequestHandler2nd handler2nd;
+    testServer.getTestRequestHandlerFactory().removeHandler(HttpTestConstants::DefaultPath);
+    testServer.getTestRequestHandlerFactory().addHandler(HttpTestConstants::DefaultPath, &handler2nd);
+
+    Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).
+            WillOnce(testing::Invoke(delegateProceedOnlyIntercept));
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder2;
+    EasyHttp::Ptr pHttpClient2 = httpClientBuilder2.setCache(pCache).addNetworkInterceptor(pMockNetworkInterceptor).
+            build();
+    Request::Builder requestBuilder2;
+    Request::Ptr pRequest2 = requestBuilder2.setUrl(url).build();
+    Call::Ptr pCall2 = pHttpClient2->newCall(pRequest2);
+
+    // execute GET method. and receive NotModified
+    Response::Ptr pResponse2 = pCall2->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse2->getCode());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_NOT_MODIFIED, pResponse2->getNetworkResponse()->getCode());
+
+    // read response body and close
+    std::string responseBody2 = pResponse2->getBody()->toString();
+
+    // third request
+
+    // GET same url (not access network)
+    EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).Times(0);
+
+    // create EasyHttp
+    EasyHttp::Builder httpClientBuilder3;
+    EasyHttp::Ptr pHttpClient3 = httpClientBuilder3.setCache(pCache).addNetworkInterceptor(pMockNetworkInterceptor).
+            build();
+    Request::Builder requestBuilder3;
+    Request::Ptr pRequest3 = requestBuilder3.setUrl(url).build();
+    Call::Ptr pCall3 = pHttpClient3->newCall(pRequest3);
+
+    // When: execute GET method. and not access network
+    Response::Ptr pResponse3 = pCall3->execute();
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pResponse3->getCode());
+
+    // Then: receive from cache.
+    EXPECT_FALSE(pResponse3->getCacheResponse().isNull());
+    EXPECT_TRUE(pResponse3->getNetworkResponse().isNull());
+
+    // read response body
+    std::string responseBody3 = pResponse3->getBody()->toString();
+    EXPECT_EQ(HttpTestConstants::DefaultResponseBody, responseBody3);
+}
+
+TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
         execute_ReturnsResponseAndStoresToCache_WhenGetMethodAndNoCacheInRequestCacheControl)
 {
     // Given: exist in cache
@@ -944,10 +1037,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -982,22 +1074,24 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database (response to no-cache request is cached)
     std::time_t startSec = startTime.epochTime();
     std::time_t endSec = endTime.epochTime();
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(key, metadata2.getKey());
-    EXPECT_EQ(url, metadata2.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
-    EXPECT_EQ(4, metadata2.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(key, pMetadata2->getKey());
+    EXPECT_EQ(url, pMetadata2->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata2->getStatusMessage().c_str());
+    EXPECT_EQ(4, pMetadata2->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(),
+        testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Content-Length", "50"), testutil::containsInHeader("Content-Type", "text/html"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(strlen(DifferentResponseBody2), metadata2.getResponseBodySize());
-    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_EQ(strlen(DifferentResponseBody2), pMetadata2->getResponseBodySize());
+    EXPECT_THAT(pMetadata2->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata2->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata2->getCreatedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -1044,10 +1138,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
 
     // Then: not store to cache.
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // not exist cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -1087,10 +1180,11 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // network access does not occur.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -1125,20 +1219,21 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
         // check database (old data exists)
         std::time_t startSec = startTime.epochTime();
         std::time_t endSec = endTime.epochTime();
-        HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-        EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-        EXPECT_EQ(key, metadata2.getKey());
-        EXPECT_EQ(url, metadata2.getUrl());
-        EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-        EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-        EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
-        EXPECT_THAT(metadata2.getResponseHeaders(), testutil::equalHeaders(metadata1.getResponseHeaders()));
-        EXPECT_EQ(metadata1.getResponseBodySize(), metadata2.getResponseBodySize());
-        EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-        EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-        EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
+        HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+        pMetadata2 = db.getMetadataAll(key);
+        ASSERT_FALSE(pMetadata2.isNull());
+        EXPECT_EQ(key, pMetadata2->getKey());
+        EXPECT_EQ(url, pMetadata2->getUrl());
+        EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+        EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+        EXPECT_STREQ(HttpStatusMessageOk, pMetadata2->getStatusMessage().c_str());
+        EXPECT_THAT(pMetadata2->getResponseHeaders(), testutil::equalHeaders(pMetadata1->getResponseHeaders()));
+        EXPECT_EQ(pMetadata1->getResponseBodySize(), pMetadata2->getResponseBodySize());
+        EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+        EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+        EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
         // update only last accessed time
-        EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+        EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
         // check cached response body (old data exists)
         EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -1179,13 +1274,15 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // wait stale to cache
-    Poco::Thread::sleep(5000); // max-age is 3 sec; wait for 5 sec
+    // Windows では sleep をタイマ割り込みで制御しており、精度が保証されないので 10sec 待ちます.
+    Poco::Thread::sleep(10000); // max-age is 3 sec; wait for 10 sec
 
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
     EXPECT_CALL(*(static_cast<MockInterceptor*> (pMockNetworkInterceptor.get())), intercept(testing::_)).
@@ -1218,20 +1315,21 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database (old data exists)
     std::time_t startSec = startTime.epochTime();
     std::time_t endSec = endTime.epochTime();
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(key, metadata2.getKey());
-    EXPECT_EQ(url, metadata2.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_STREQ(HttpStatusMessageOk, metadata2.getStatusMessage().c_str());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testutil::equalHeaders(metadata1.getResponseHeaders()));
-    EXPECT_EQ(metadata1.getResponseBodySize(), metadata2.getResponseBodySize());
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(key, pMetadata2->getKey());
+    EXPECT_EQ(url, pMetadata2->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_STREQ(HttpStatusMessageOk, pMetadata2->getStatusMessage().c_str());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(), testutil::equalHeaders(pMetadata1->getResponseHeaders()));
+    EXPECT_EQ(pMetadata1->getResponseBodySize(), pMetadata2->getResponseBodySize());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
     // update only last accessed time
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec, endSec));
 
     // check cached response body (old data exists)
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -1277,10 +1375,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest, execute_ReturnesResponseAnd
 
     // Then: not store to cache.
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_FALSE(db.getMetadataAll(key, metadata));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -1317,10 +1414,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // POST same url
     DifferentResponseBodyRequestHandler2nd handler2nd;
@@ -1349,8 +1445,7 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody2 = pResponse2->getBody()->toString();
 
     // not exist in cache
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_FALSE(db.getMetadataAll(key, metadata2));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
 
     // not exist cached response body
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -1387,10 +1482,9 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     std::string responseBodyData = std::string(HttpTestConstants::Chunked01ResponseBody) +
             HttpTestConstants::Chunked02ResponseBody;
@@ -1433,23 +1527,25 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     // check database
     std::time_t startSec2 = startTime2.epochTime();
     std::time_t endSec2 = endTime2.epochTime();
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(key, metadata2.getKey());
-    EXPECT_EQ(url, metadata2.getUrl());
-    EXPECT_EQ(Request::HttpMethodGet, metadata2.getHttpMethod());
-    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, metadata2.getStatusCode());
-    EXPECT_EQ(5, metadata2.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(key, pMetadata2->getKey());
+    EXPECT_EQ(url, pMetadata2->getUrl());
+    EXPECT_EQ(Request::HttpMethodGet, pMetadata2->getHttpMethod());
+    EXPECT_EQ(Poco::Net::HTTPResponse::HTTP_OK, pMetadata2->getStatusCode());
+    EXPECT_EQ(5, pMetadata2->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(),
+        testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Transfer-Encoding", "chunked"),
         testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::containsInHeader("Last-Modified", "Mon, 25 Jul 2016 10:13:43 GMT"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(responseBodyData.size(), metadata2.getResponseBodySize());
-    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_EQ(responseBodyData.size(), pMetadata2->getResponseBodySize());
+    EXPECT_THAT(pMetadata2->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
 
     // もう１回実行しても、同様に、ネットワークアクセスして、NotModified 受信で、Cacahe を使用する。
     Interceptor::Ptr pMockNetworkInterceptor3 = new MockInterceptor();
@@ -1477,17 +1573,19 @@ TEST_F(CallWithCacheAfterSendRequestIntegrationTest,
     EXPECT_FALSE(pResponse3->hasContentLength());
 
     // check database
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata3));
-    EXPECT_EQ(key, metadata3.getKey());
-    EXPECT_EQ(url, metadata3.getUrl());
-    EXPECT_EQ(5, metadata3.getResponseHeaders()->getSize());
-    EXPECT_THAT(metadata3.getResponseHeaders(), testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata3;
+    pMetadata3 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata3.isNull());
+    EXPECT_EQ(key, pMetadata3->getKey());
+    EXPECT_EQ(url, pMetadata3->getUrl());
+    EXPECT_EQ(5, pMetadata3->getResponseHeaders()->getSize());
+    EXPECT_THAT(pMetadata3->getResponseHeaders(),
+        testing::AllOf(testutil::containsInHeader("Connection", "Keep-Alive"),
         testutil::containsInHeader("Transfer-Encoding", "chunked"),
         testutil::containsInHeader("Content-Type", "text/plain"),
         testutil::containsInHeader("Last-Modified", "Mon, 25 Jul 2016 10:13:43 GMT"),
         testutil::hasKeyInHeader("Date")));
-    EXPECT_EQ(responseBodyData.size(), metadata3.getResponseBodySize());
+    EXPECT_EQ(responseBodyData.size(), pMetadata3->getResponseBodySize());
 }
 
 namespace {
@@ -1551,11 +1649,12 @@ TEST_P(ContentLengthZeroParameterisedTest,
 
     // Then: store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
-    EXPECT_EQ(0, metadata1.getResponseBodySize());
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
+    EXPECT_EQ(0, pMetadata1->getResponseBodySize());
 
     // check cached response body
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
@@ -1622,11 +1721,12 @@ TEST_P(ContentLengthZeroParameterisedTest,
 
     // store to cache
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
-    EXPECT_EQ(0, metadata1.getResponseBodySize());
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
+    EXPECT_EQ(0, pMetadata1->getResponseBodySize());
 
     // check cached response body
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,

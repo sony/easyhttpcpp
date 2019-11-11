@@ -64,7 +64,7 @@ void DigestEngine::reset()
     try {
         m_pImpl->reset();
     } catch (const MessageDigestException& e) {
-        EASYHTTPCPP_LOG_D(Tag, "Error occurred while resetting the engine. Error: %s:%s", e.getMessage().c_str());
+        EASYHTTPCPP_LOG_D(Tag, "Error occurred while resetting the engine. Error: %s", e.getMessage().c_str());
         throw;
     }
 }

@@ -18,6 +18,7 @@ const char* const TestConstants::BaseUrlSni = "http://cdn.meta.csxdev.com/";
 const char* const TestConstants::CertificateUrlEnclaveConfiguration
         = "https://d2w29nwp6bf7n5.cloudfront.net/certificates";
 const char* const TestConstants::CertificateUrlSni = "https://cert-cdn.meta.csxdev.com/certificates/1008";
+const char* const TestConstants::LongDirName64byte = "012345678901234567890123456789012345678901234567890LongDirName64";
 
 } /* namespace testutil */
 } /* namespace easyhttpcpp */

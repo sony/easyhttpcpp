@@ -150,7 +150,7 @@ Request::Ptr HttpEngine::makeRetryRequest(Response::Ptr pResponse)
     std::string resolvedUrl;
     try {
         Poco::URI::decode(redirectUrl, resolvedUrl);
-    } catch (const Poco::Exception& e) {
+    } catch (const Poco::Exception&) {
         EASYHTTPCPP_LOG_D(Tag, "isRetryContition: redirect url can not decode [%s]", redirectUrl.c_str());
         return NULL;
     }
@@ -534,16 +534,20 @@ Response::Ptr HttpEngine::receiveResponse(PocoHttpClientSessionPtr pPocoHttpClie
 
 bool HttpEngine::cancel()
 {
-    Poco::FastMutex::ScopedLock lock(m_connectionMutex);
-    if (m_cancelled) {
-        EASYHTTPCPP_LOG_D(Tag, "cancel: already cancelled");
-        return true;
+    ConnectionInternal::Ptr pConnectionInternal;
+    {
+        Poco::FastMutex::ScopedLock lock(m_connectionMutex);
+        if (m_cancelled) {
+            EASYHTTPCPP_LOG_D(Tag, "cancel: already cancelled");
+            return true;
+        }
+        m_cancelled = true;
+        EASYHTTPCPP_LOG_D(Tag, "cancel: cancelled");
+        pConnectionInternal = m_pConnectionInternal;
     }
-    m_cancelled = true;
-    EASYHTTPCPP_LOG_D(Tag, "cancel: cancelled");
-    if (m_pConnectionInternal) {
-        bool ret = m_pConnectionInternal->cancel();
-        m_pConnectionPoolInternal->removeConnection(m_pConnectionInternal);
+    if (pConnectionInternal) {
+        bool ret = pConnectionInternal->cancel();
+        m_pConnectionPoolInternal->removeConnection(pConnectionInternal);
         return ret;
     }
     return m_cancelled;

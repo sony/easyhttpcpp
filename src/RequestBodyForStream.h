@@ -7,11 +7,12 @@
 
 #include <istream>
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
 
-class RequestBodyForStream : public RequestBody {
+class EASYHTTPCPP_HTTP_INTERNAL_API RequestBodyForStream : public RequestBody {
 public:
     RequestBodyForStream(MediaType::Ptr pMediaType, std::istream& content);
     virtual ~RequestBodyForStream();

@@ -9,11 +9,12 @@
 #include "gmock/gmock.h"
 
 #include "easyhttpcpp/Headers.h"
+#include "TestUtilExports.h"
 
 namespace easyhttpcpp {
 namespace testutil {
 
-class HeaderContainMatcher {
+class EASYHTTPCPP_TESTUTIL_API HeaderContainMatcher {
 public:
     HeaderContainMatcher(const std::string& name, const std::string& value);
     HeaderContainMatcher(const std::string& name);

@@ -131,16 +131,13 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache)
     // read response body and close
     std::string responseBody3 = pResponse3->getBody()->toString();
 
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url1);
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    EXPECT_FALSE(db.getMetadataAll(key1).isNull());
     std::string key2 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url2);
-    EXPECT_TRUE(db.getMetadataAll(key2, metadata2));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    EXPECT_FALSE(db.getMetadataAll(key2).isNull());
     std::string key3 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url3);
-    EXPECT_TRUE(db.getMetadataAll(key3, metadata3));
+    EXPECT_FALSE(db.getMetadataAll(key3).isNull());
 
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
             url1));
@@ -159,9 +156,9 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache)
     pCache->evictAll();
 
     // Then: remove all cache
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-    EXPECT_FALSE(db.getMetadataAll(key2, metadata2));
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key2).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
 
     EXPECT_FALSE(responseBodyFile1.exists());
     EXPECT_FALSE(responseBodyFile2.exists());
@@ -225,16 +222,13 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache_WhenExistReadingRespon
     EXPECT_EQ(10, pResponseBodyStream3->read(responseBodyBuffer3.begin(), 10));
 
     // confirm database (key3 is not exist in cache))
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url1);
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    EXPECT_FALSE(db.getMetadataAll(key1).isNull());
     std::string key2 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url2);
-    EXPECT_TRUE(db.getMetadataAll(key2, metadata2));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    EXPECT_FALSE(db.getMetadataAll(key2).isNull());
     std::string key3 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url3);
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
 
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
             url1));
@@ -257,9 +251,9 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache_WhenExistReadingRespon
     pCache->evictAll();
 
     // Then: delete all cache
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-    EXPECT_FALSE(db.getMetadataAll(key2, metadata2));
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key2).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
 
     EXPECT_FALSE(responseBodyFile1.exists());
     EXPECT_FALSE(responseBodyFile2.exists());
@@ -278,7 +272,8 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache_WhenBeforeFirstCacheAc
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
     Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
     cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
+    Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+            EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb));
     srcTestData.copyTo(cachePath);
 
     HttpCache::Ptr pCache = HttpCache::createCache(Poco::Path(cachePath), HttpTestConstants::DefaultCacheMaxSize);
@@ -287,22 +282,19 @@ TEST_F(HttpCacheIntegrationTest, evictAll_DeletesAllCache_WhenBeforeFirstCacheAc
     pCache->evictAll();
 
     // Then: delete all cache
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string url1 = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url1);
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-   HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
     std::string url3 = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery3);
     std::string key3 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url3);
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata4;
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
     std::string url4 = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
             HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery4);
     std::string key4 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url4);
-    EXPECT_FALSE(db.getMetadataAll(key4, metadata1));
+    EXPECT_TRUE(db.getMetadataAll(key4).isNull());
 }
 
 // CacheManager::purge が失敗すると、evictAll が HttpExecutionException を throw する。
@@ -433,14 +425,15 @@ TEST_F(HttpCacheIntegrationTest, createCacheStrategy_SetsCachedResponse_WhenExis
     // Then: cached response make from cached response metadata.
     Response::Ptr pCachedResponse = pCacheStrategy->getCachedResponse();
     EXPECT_FALSE(pCachedResponse.isNull());
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata));
+    pMetadata = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata.isNull());
     EXPECT_EQ(url, pCachedResponse->getRequest()->getUrl());
-    EXPECT_EQ(metadata.getStatusCode(), pCachedResponse->getCode());
-    EXPECT_EQ(metadata.getStatusMessage(), pCachedResponse->getMessage());
-    EXPECT_EQ(metadata.getResponseBodySize(), pCachedResponse->getContentLength());
+    EXPECT_EQ(pMetadata->getStatusCode(), pCachedResponse->getCode());
+    EXPECT_EQ(pMetadata->getStatusMessage(), pCachedResponse->getMessage());
+    EXPECT_EQ(pMetadata->getResponseBodySize(), pCachedResponse->getContentLength());
     EXPECT_TRUE(pCachedResponse->getBody().isNull());
 
     EXPECT_TRUE(pCacheStrategy->getNetworkRequest().isNull());
@@ -473,10 +466,9 @@ TEST_F(HttpCacheIntegrationTest, remove_RemovesResponseFromCache_WhenExistCache)
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check cache database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
             url));
     EXPECT_TRUE(responseBodyFile.exists());
@@ -488,8 +480,7 @@ TEST_F(HttpCacheIntegrationTest, remove_RemovesResponseFromCache_WhenExistCache)
     pHttpCacheInternal->remove(pRequest2);
 
     // Then: remove from cache
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_FALSE(db.getMetadataAll(key, metadata2));
+    EXPECT_TRUE(db.getMetadataAll(key).isNull());
     EXPECT_FALSE(responseBodyFile.exists());
 }
 
@@ -522,10 +513,9 @@ TEST_F(HttpCacheIntegrationTest, createInputStreamFromCache_ReturnsIstream_WhenE
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check cache database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    ASSERT_TRUE(db.getMetadataAll(key, metadata1));
+    ASSERT_FALSE(db.getMetadataAll(key).isNull());
 
     // When: call createInputStreamFromCache
     Request::Builder requestBuilder2;

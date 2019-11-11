@@ -224,7 +224,9 @@ TEST_F(ScheduledFutureTaskIntegrationTest, getWithTimeout_ReturnsResultOnRetry_W
 
     // When: call get(timeout) again with delay + margin
     // Then: result is returned
-    Poco::Timespan marginSpan(1, 0);
+
+    // Windows では Poco::Util::Timer でのタイマーの精度が低い為、2sec のマージンを取ります.
+    Poco::Timespan marginSpan(2, 0);
     EXPECT_EQ(ResultString, pTestee->get(delaySpan.totalMilliseconds() + marginSpan.totalMilliseconds()));
 
     // executed at expected time

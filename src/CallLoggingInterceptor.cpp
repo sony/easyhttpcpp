@@ -41,14 +41,18 @@ Response::Ptr CallLoggingInterceptor::intercept(Interceptor::Chain& chain)
         EASYHTTPCPP_LOG_V(Tag, "Received response for %s call to [%s] in %lld ms.\n"
                 "Response Code: %d, Response message: %s, Response headers: \n%s",
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str(),
-                (start.elapsed() / 1000), pResponse->getCode(), pResponse->getMessage().c_str(),
-                pResponse->getHeaders()->toString().c_str());
+                // elapsed() return Poco::Timestamp::TimeDiff. Poco::Timestamp::TimeDiff is static cast necessary 
+                // because byte size is different between 64 bit build and 32 bit build.
+                static_cast<signed long long> (start.elapsed() / 1000),
+                pResponse->getCode(), pResponse->getMessage().c_str(), pResponse->getHeaders()->toString().c_str());
 
         return pResponse;
     } catch (const HttpException& e) {
         EASYHTTPCPP_LOG_V(Tag, "Failed to receive response for %s call to [%s]. Time taken: %lld ms. \nError: %s",
                 HttpUtil::httpMethodToString(pRequest->getMethod()).c_str(), pRequest->getUrl().c_str(),
-                (start.elapsed() / 1000), e.getMessage().c_str());
+                // elapsed() return Poco::Timestamp::TimeDiff. Poco::Timestamp::TimeDiff is static cast necessary 
+                // because byte size is different between 64 bit build and 32 bit build.
+                static_cast<signed long long> (start.elapsed() / 1000), e.getMessage().c_str());
 
         throw;
     }

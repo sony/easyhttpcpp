@@ -62,6 +62,13 @@ static const std::string DestFileDepth0 = "FileUtilDestFile";
 static const std::string DestFileDepth2 = Poco::Path(SubDirectoryForTest, "DestFile").toString();
 static const std::string SourceFileNotExists = "FileUtilSourceFileNotExists";
 
+// for convertToAbsolutePathString
+#ifndef _WIN32
+const std::string ExtendedPathPrefix = "";
+#else
+const std::string ExtendedPathPrefix = "\\\\?\\";
+#endif
+
 } /* namespace */
 
 class FileUtilUnitTest : public testing::Test {
@@ -482,6 +489,56 @@ TEST_F(FileUtilUnitTest,
     // When: call FileUtil::moveFile()
     // Then: FileUtil::moveFile() returns true
     EXPECT_TRUE(FileUtil::moveFile(source, destination));
+}
+
+TEST_F(FileUtilUnitTest, convertToAbsolutePathString_ReturnsAbsolutePath_WhenGivenTheRelativePath)
+{
+    // Given: -
+
+    // When: calls convertToAbsolutePathString with relative path
+    std::string actualPath = FileUtil::convertToAbsolutePathString(FileUtilTestRootDirPath);
+
+    // Then: returns absolute path
+    std::string expetedPath = Poco::Path(FileUtilTestRootDirPath).absolute().toString();
+    EXPECT_EQ(expetedPath, actualPath);
+}
+
+TEST_F(FileUtilUnitTest, convertToAbsolutePathString_ReturnsAbsolutePath_WhenGivenTheRelativePathWithExtendedPrefixTrue)
+{
+    // Given: -
+
+    // When: calls convertToAbsolutePathString with relative path and extendedPrefix is true
+    std::string actualPath = FileUtil::convertToAbsolutePathString(FileUtilTestRootDirPath, true);
+
+    // Then: returns absolute path
+    std::string expetedPath = ExtendedPathPrefix + Poco::Path(FileUtilTestRootDirPath).absolute().toString();
+    EXPECT_EQ(expetedPath, actualPath);
+}
+
+TEST_F(FileUtilUnitTest, convertToAbsolutePathString_ReturnsAbsolutePath_WhenGivenTheAbsolutePath)
+{
+    // Given: -
+    std::string absolutePath = Poco::Path(FileUtilTestRootDirPath).absolute().toString();
+
+    // When: calls convertToAbsolutePathString with absolute path
+    std::string actualPath = FileUtil::convertToAbsolutePathString(absolutePath);
+
+    // Then: returns absolute path
+    std::string expetedPath = absolutePath;
+    EXPECT_EQ(expetedPath, actualPath);
+}
+
+TEST_F(FileUtilUnitTest, convertToAbsolutePathString_ReturnsAbsolutePath_WhenGivenTheAbsolutePathWithExtendedPrefixTrue)
+{
+    // Given: -
+    std::string absolutePath = Poco::Path(FileUtilTestRootDirPath).absolute().toString();
+
+    // When: calls convertToAbsolutePathString with absolute path and extendedPrefix is true
+    std::string actualPath = FileUtil::convertToAbsolutePathString(absolutePath, true);
+
+    // Then: returns absolute path
+    std::string expetedPath = ExtendedPathPrefix + absolutePath;
+    EXPECT_EQ(expetedPath, actualPath);
 }
 
 } /* namespace test */

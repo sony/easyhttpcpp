@@ -7,10 +7,12 @@
 
 #include "TestServer.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class HttpTestServer : public TestServer {
+class EASYHTTPCPP_TESTUTIL_API HttpTestServer : public TestServer {
 public:
     HttpTestServer();
     virtual ~HttpTestServer();

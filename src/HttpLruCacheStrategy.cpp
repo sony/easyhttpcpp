@@ -104,7 +104,7 @@ bool HttpLruCacheStrategy::createRemoveLruDataList(LruKeyList& keys, size_t remo
         if (pHttpCacheInfo->getDataRefCount() == 0) {
             keys.push_front(pCacheInfo->getKey());
             targetSize += pCacheInfo->getDataSize();
-            EASYHTTPCPP_LOG_D(Tag, "createRemoveLruDataList: dataDize=%zu key=%s", pCacheInfo->getDataSize(),
+            EASYHTTPCPP_LOG_D(Tag, "createRemoveLruDataList: dataSize=%zu key=%s", pCacheInfo->getDataSize(),
                     pCacheInfo->getKey().c_str());
         }
 

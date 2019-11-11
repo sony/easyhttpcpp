@@ -14,8 +14,10 @@
 #include "easyhttpcpp/common/CoreLogger.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
+#include "easyhttpcpp/db/SqlException.h"
 #include "easyhttpcpp/Headers.h"
 #include "HeadersEqualMatcher.h"
+#include "EasyHttpCppAssertions.h"
 #include "TestDefs.h"
 #include "TestFileUtil.h"
 #include "TestLogger.h"
@@ -33,6 +35,8 @@
 using easyhttpcpp::common::CacheMetadata;
 using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
+using easyhttpcpp::db::SqlExecutionException;
+using easyhttpcpp::db::SqlIllegalStateException;
 using easyhttpcpp::testutil::TestFileUtil;
 
 namespace easyhttpcpp {
@@ -77,101 +81,101 @@ bool createDefaultCacheRootDir()
     return FileUtil::createDirsIfAbsent(HttpTestUtil::getDefaultCacheRootDir());
 }
 
-bool createDbCacheMetadata(Poco::Path databaseFile, const std::string& key,
-        HttpCacheDatabase::HttpCacheMetadataAll& metadata)
+void createDbCacheMetadata(Poco::Path databaseFile, const std::string& key,
+        HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata)
 {
-    HttpCacheDatabase db(databaseFile);
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    metadata.setKey(key);
-    metadata.setUrl(Test1Url);
-    metadata.setHttpMethod(Request::HttpMethodGet);
-    metadata.setStatusCode(Test1StatusCode);
-    metadata.setStatusMessage(Test1StatusMessage);
-    metadata.setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
-    metadata.setResponseBodySize(Test1ResponseBodySize);
+    pMetadata->setKey(key);
+    pMetadata->setUrl(Test1Url);
+    pMetadata->setHttpMethod(Request::HttpMethodGet);
+    pMetadata->setStatusCode(Test1StatusCode);
+    pMetadata->setStatusMessage(Test1StatusMessage);
+    pMetadata->setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
+    pMetadata->setResponseBodySize(Test1ResponseBodySize);
     Poco::Timestamp sentRequestTime;
     HttpUtil::tryParseDate(Test1SentRequestTime, sentRequestTime);
-    metadata.setSentRequestAtEpoch(sentRequestTime.epochTime());
+    pMetadata->setSentRequestAtEpoch(sentRequestTime.epochTime());
     Poco::Timestamp receivedResponseTime;
     HttpUtil::tryParseDate(Test1ReceivedResponseTime, receivedResponseTime);
-    metadata.setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
+    pMetadata->setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
     Poco::Timestamp createdMetadataTime;
     HttpUtil::tryParseDate(Test1CreatedMetadataTime, createdMetadataTime);
-    metadata.setCreatedAtEpoch(createdMetadataTime.epochTime());
+    pMetadata->setCreatedAtEpoch(createdMetadataTime.epochTime());
     Poco::Timestamp lastAccessedTime;
     HttpUtil::tryParseDate(Test1LastAccessedTime, lastAccessedTime);
-    metadata.setLastAccessedAtEpoch(lastAccessedTime.epochTime());
+    pMetadata->setLastAccessedAtEpoch(lastAccessedTime.epochTime());
 
-    return db.updateMetadataAll(key, metadata);
+    db.updateMetadataAll(key, pMetadata);
 }
 
-bool createDbCacheMetadataWithBodySizeAndLastAccessedTime(Poco::Path databaseFile, const std::string& key,
+void createDbCacheMetadataWithBodySizeAndLastAccessedTime(Poco::Path databaseFile, const std::string& key,
         size_t responseBodySize, const std::string& lastAccessedTimeStr,
-        HttpCacheDatabase::HttpCacheMetadataAll& metadata)
+        HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata)
 {
-    HttpCacheDatabase db(databaseFile);
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    metadata.setKey(key);
-    metadata.setUrl(Test1Url);
-    metadata.setHttpMethod(Request::HttpMethodGet);
-    metadata.setStatusCode(Test1StatusCode);
-    metadata.setStatusMessage(Test1StatusMessage);
-    metadata.setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
-    metadata.setResponseBodySize(responseBodySize);
+    pMetadata->setKey(key);
+    pMetadata->setUrl(Test1Url);
+    pMetadata->setHttpMethod(Request::HttpMethodGet);
+    pMetadata->setStatusCode(Test1StatusCode);
+    pMetadata->setStatusMessage(Test1StatusMessage);
+    pMetadata->setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
+    pMetadata->setResponseBodySize(responseBodySize);
     Poco::Timestamp sentRequestTime;
     HttpUtil::tryParseDate(Test1SentRequestTime, sentRequestTime);
-    metadata.setSentRequestAtEpoch(sentRequestTime.epochTime());
+    pMetadata->setSentRequestAtEpoch(sentRequestTime.epochTime());
     Poco::Timestamp receivedResponseTime;
     HttpUtil::tryParseDate(Test1ReceivedResponseTime, receivedResponseTime);
-    metadata.setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
+    pMetadata->setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
     Poco::Timestamp createdMetadataTime;
     HttpUtil::tryParseDate(Test1CreatedMetadataTime, createdMetadataTime);
-    metadata.setCreatedAtEpoch(createdMetadataTime.epochTime());
+    pMetadata->setCreatedAtEpoch(createdMetadataTime.epochTime());
     Poco::Timestamp lastAccessedTime;
     HttpUtil::tryParseDate(lastAccessedTimeStr, lastAccessedTime);
-    metadata.setLastAccessedAtEpoch(lastAccessedTime.epochTime());
+    pMetadata->setLastAccessedAtEpoch(lastAccessedTime.epochTime());
 
-    return db.updateMetadataAll(key, metadata);
+    db.updateMetadataAll(key, pMetadata);
 }
 
-void setHttpCacheMetadata(const std::string& key, HttpCacheMetadata& httpCacheMetadata)
+void setHttpCacheMetadata(const std::string& key, HttpCacheMetadata::Ptr pHttpCacheMetadata)
 {
-    httpCacheMetadata.setKey(key);
-    httpCacheMetadata.setUrl(Test1Url);
-    httpCacheMetadata.setHttpMethod(Request::HttpMethodGet);
-    httpCacheMetadata.setStatusCode(Test1StatusCode);
-    httpCacheMetadata.setStatusMessage(Test1StatusMessage);
-    httpCacheMetadata.setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
-    httpCacheMetadata.setResponseBodySize(Test1ResponseBodySize);
+    pHttpCacheMetadata->setKey(key);
+    pHttpCacheMetadata->setUrl(Test1Url);
+    pHttpCacheMetadata->setHttpMethod(Request::HttpMethodGet);
+    pHttpCacheMetadata->setStatusCode(Test1StatusCode);
+    pHttpCacheMetadata->setStatusMessage(Test1StatusMessage);
+    pHttpCacheMetadata->setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test1ResponseHeader));
+    pHttpCacheMetadata->setResponseBodySize(Test1ResponseBodySize);
     Poco::Timestamp sentRequestTime;
     HttpUtil::tryParseDate(Test1SentRequestTime, sentRequestTime);
-    httpCacheMetadata.setSentRequestAtEpoch(sentRequestTime.epochTime());
+    pHttpCacheMetadata->setSentRequestAtEpoch(sentRequestTime.epochTime());
     Poco::Timestamp receivedResponseTime;
     HttpUtil::tryParseDate(Test1ReceivedResponseTime, receivedResponseTime);
-    httpCacheMetadata.setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
+    pHttpCacheMetadata->setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
     Poco::Timestamp createdMetadataTime;
     HttpUtil::tryParseDate(Test1CreatedMetadataTime, createdMetadataTime);
-    httpCacheMetadata.setCreatedAtEpoch(createdMetadataTime.epochTime());
+    pHttpCacheMetadata->setCreatedAtEpoch(createdMetadataTime.epochTime());
 }
 
-void setHttpCacheMetadataForUpdate(const std::string& key, HttpCacheMetadata& httpCacheMetadata)
+void setHttpCacheMetadataForUpdate(const std::string& key, HttpCacheMetadata::Ptr pHttpCacheMetadata)
 {
-    httpCacheMetadata.setKey(key);
-    httpCacheMetadata.setUrl(Test2Url);
-    httpCacheMetadata.setHttpMethod(Request::HttpMethodGet);
-    httpCacheMetadata.setStatusCode(Test2StatusCode);
-    httpCacheMetadata.setStatusMessage(Test2StatusMessage);
-    httpCacheMetadata.setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test2ResponseHeader));
-    httpCacheMetadata.setResponseBodySize(Test2ResponseBodySize);
+    pHttpCacheMetadata->setKey(key);
+    pHttpCacheMetadata->setUrl(Test2Url);
+    pHttpCacheMetadata->setHttpMethod(Request::HttpMethodGet);
+    pHttpCacheMetadata->setStatusCode(Test2StatusCode);
+    pHttpCacheMetadata->setStatusMessage(Test2StatusMessage);
+    pHttpCacheMetadata->setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(Test2ResponseHeader));
+    pHttpCacheMetadata->setResponseBodySize(Test2ResponseBodySize);
     Poco::Timestamp sentRequestTime;
     HttpUtil::tryParseDate(Test2SentRequestTime, sentRequestTime);
-    httpCacheMetadata.setSentRequestAtEpoch(sentRequestTime.epochTime());
+    pHttpCacheMetadata->setSentRequestAtEpoch(sentRequestTime.epochTime());
     Poco::Timestamp receivedResponseTime;
     HttpUtil::tryParseDate(Test2ReceivedResponseTime, receivedResponseTime);
-    httpCacheMetadata.setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
+    pHttpCacheMetadata->setReceivedResponseAtEpoch(receivedResponseTime.epochTime());
     Poco::Timestamp createdMetadataTime;
     HttpUtil::tryParseDate(Test2CreatedMetadataTime, createdMetadataTime);
-    httpCacheMetadata.setCreatedAtEpoch(createdMetadataTime.epochTime());
+    pHttpCacheMetadata->setCreatedAtEpoch(createdMetadataTime.epochTime());
 }
 
 class DatabaseAccessRunner : public SynchronizedExecutionRunner {
@@ -203,10 +207,8 @@ public:
         waitToStart();
 
         // execute
-        HttpCacheMetadata* pHttpCacheMetadata;
-        bool ret = m_database.getMetadata(m_key, pHttpCacheMetadata);
-        m_pCacheMetadata = pHttpCacheMetadata;
-        return ret;
+        m_pCacheMetadata = m_database.getMetadata(m_key);
+        return true;
     }
     CacheMetadata::Ptr getCacheMetadata()
     {
@@ -244,16 +246,16 @@ public:
     bool execute()
     {
         // prepare
-        HttpCacheMetadata* pHttpCacheMetadata = new HttpCacheMetadata();
+        HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
+        setHttpCacheMetadataForUpdate(m_key, pHttpCacheMetadata);
         m_pCacheMetadata = pHttpCacheMetadata;
-        setHttpCacheMetadataForUpdate(m_key, *pHttpCacheMetadata);
 
         setToReady();
         waitToStart();
 
         // execute
-        bool ret = m_database.updateMetadata(m_key, pHttpCacheMetadata);
-        return ret;
+        m_database.updateMetadata(m_key, pHttpCacheMetadata);
+        return true;
     }
     CacheMetadata::Ptr getCacheMetadata()
     {
@@ -305,12 +307,12 @@ TEST_F(HttpCacheDatabaseIntegrationTest, getMetadata_ReturnsFalse_WhenNotExistKe
     // Given: no key in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: getMetadata by not exist key
-    // Then: return false
-    HttpCacheMetadata* pHttpCacheMetadata;
-    EXPECT_FALSE(database.getMetadata(Key1, pHttpCacheMetadata));
+    // Then: return NULL
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = database.getMetadata(Key1);
+    EXPECT_TRUE(pHttpCacheMetadata.isNull());
 }
 
 // getMetadata
@@ -319,41 +321,40 @@ TEST_F(HttpCacheDatabaseIntegrationTest, getMetadata_ReturnsTrue_WhenExistKey)
     // Given: insert cacheMetadata in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadata));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadata);
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: getMetadata by exist key
-    // Then: return true and get metadata
-    HttpCacheMetadata* pHttpCacheMetadata;
-    EXPECT_TRUE(database.getMetadata(Key1, pHttpCacheMetadata));
+    // Then: return metadata
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = database.getMetadata(Key1);
+    EXPECT_FALSE(pHttpCacheMetadata.isNull());
     CacheMetadata::Ptr pCacheMetadata = pHttpCacheMetadata;
 
     // check metadata
-    EXPECT_EQ(metadata.getKey(), pHttpCacheMetadata->getKey());
-    EXPECT_EQ(metadata.getUrl(), pHttpCacheMetadata->getUrl());
-    EXPECT_EQ(metadata.getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
-    EXPECT_EQ(metadata.getStatusCode(), pHttpCacheMetadata->getStatusCode());
-    EXPECT_EQ(metadata.getStatusMessage(), pHttpCacheMetadata->getStatusMessage());
-    EXPECT_THAT(pHttpCacheMetadata->getResponseHeaders(), testutil::equalHeaders(metadata.getResponseHeaders()));
-    EXPECT_EQ(metadata.getResponseBodySize(), pHttpCacheMetadata->getResponseBodySize());
-    EXPECT_EQ(metadata.getSentRequestAtEpoch(), pHttpCacheMetadata->getSentRequestAtEpoch());
-    EXPECT_EQ(metadata.getReceivedResponseAtEpoch(), pHttpCacheMetadata->getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata.getCreatedAtEpoch(), pHttpCacheMetadata->getCreatedAtEpoch());
+    EXPECT_EQ(pMetadata->getKey(), pHttpCacheMetadata->getKey());
+    EXPECT_EQ(pMetadata->getUrl(), pHttpCacheMetadata->getUrl());
+    EXPECT_EQ(pMetadata->getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
+    EXPECT_EQ(pMetadata->getStatusCode(), pHttpCacheMetadata->getStatusCode());
+    EXPECT_EQ(pMetadata->getStatusMessage(), pHttpCacheMetadata->getStatusMessage());
+    EXPECT_THAT(pHttpCacheMetadata->getResponseHeaders(), testutil::equalHeaders(pMetadata->getResponseHeaders()));
+    EXPECT_EQ(pMetadata->getResponseBodySize(), pHttpCacheMetadata->getResponseBodySize());
+    EXPECT_EQ(pMetadata->getSentRequestAtEpoch(), pHttpCacheMetadata->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata->getReceivedResponseAtEpoch(), pHttpCacheMetadata->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata->getCreatedAtEpoch(), pHttpCacheMetadata->getCreatedAtEpoch());
 }
 
 // getMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, getMetadata_ReturnsFalse_WhenDatabaseDirectoryIsAbsent)
+TEST_F(HttpCacheDatabaseIntegrationTest, getMetadata_ThrowsSqlIllegalStateException_WhenDatabaseDirectoryIsAbsent)
 {
     // Given: do not create database directory
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: getMetadata by not exist key
-    // Then: return false
-    HttpCacheMetadata* pHttpCacheMetadata;
-    EXPECT_FALSE(database.getMetadata(Key1, pHttpCacheMetadata));
+    // Then: throw SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.getMetadata(Key1), SqlIllegalStateException, 100201);
 }
 
 // deleteMetadata
@@ -362,7 +363,7 @@ TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsFalse_WhenNotExis
     // Given: no key in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: deleteMetadata by not exist key
     // Then: return false
@@ -375,160 +376,189 @@ TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsTrue_WhenExistKey
     // Given: insert cacheMetadata in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadata));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadata);
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: deleteMetadata by exist key
     // Then: return true and remove metadata from database
     EXPECT_TRUE(database.deleteMetadata(Key1));
 
     // check deleted metadata from database
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadataWork;
-    EXPECT_FALSE(db.getMetadataAll(Key1, metadataWork));
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    EXPECT_TRUE(db.getMetadataAll(Key1).isNull());
 }
 
 // deleteMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsFalse_WhenDatabaseDirectoryIsAbsent)
+TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ThrowsSqlIllegalStateException_WhenDatabaseDirectoryIsAbsent)
 {
     // Given: do not create database directory
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: deleteMetadata by not exist key
-    // Then: return false
-    EXPECT_FALSE(database.deleteMetadata(Key1));
+    // Then: throw SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.deleteMetadata(Key1), SqlIllegalStateException, 100201);
 }
 
 // deletMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsFalse_WhenCannotWriteDatabase)
+TEST_F(HttpCacheDatabaseIntegrationTest,
+        deleteMetadata_ThrowsSqlException_WhenCannotWriteDatabase)
 {
     // Given: set readonly to database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadata));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadata);
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
     TestFileUtil::setReadOnly(file.path());
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     // When: deleteMetadata by exist key
-    // Then: return false
-    EXPECT_FALSE(database.deleteMetadata(Key1));
+    // Then: throw SqlException
+
+    // database file を read only にして database にアクセスしたとき、
+    // Windows では SqliteDatabase の constructor の new Poco::Data::Session で Poco::Data::ConnectionFailedException
+    // が発生して easyhttpcpp::db::SqlIllegalStateException が throw されます。
+    // Linux では new Poco::Data::Session ではエラーとならず、Poco::Data::Statement::execute で
+    // Poco::Data::SQLite::ReadOnlyException が発生して easyhttpcpp::db::SqlExecutionException が throw されます。
+    // このため、このテストでは、_WIN32 でチェックする Exception を切り替えています。
+#ifdef _WIN32
+    // throw SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.deleteMetadata(Key1), SqlIllegalStateException, 100201);
+#else
+    // throw SqlExecutionException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.deleteMetadata(Key1), SqlExecutionException, 100202);
+#endif
 }
 
 // updateMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsTrue_WhenNotExistKey)
+TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_InsertsMetadata_WhenNotExistKey)
 {
     // Given: no key in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    HttpCacheMetadata httpCacheMetadata;
-    setHttpCacheMetadata(Key1, httpCacheMetadata);
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
+    setHttpCacheMetadata(Key1, pHttpCacheMetadata);
 
     // When: updateMetadata by not exist key
-    // Then: return true and update metadata
+    // Then: insert metadata in database
     Poco::Timestamp startTime;
-    EXPECT_TRUE(database.updateMetadata(Key1, &httpCacheMetadata));
+    database.updateMetadata(Key1, pHttpCacheMetadata);
     Poco::Timestamp endTime;
 
     // check updated metadata
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    ASSERT_TRUE(db.getMetadataAll(Key1, metadata));
-    EXPECT_EQ(httpCacheMetadata.getKey(), metadata.getKey());
-    EXPECT_EQ(httpCacheMetadata.getUrl(), metadata.getUrl());
-    EXPECT_EQ(httpCacheMetadata.getHttpMethod(), metadata.getHttpMethod());
-    EXPECT_EQ(httpCacheMetadata.getStatusCode(), metadata.getStatusCode());
-    EXPECT_EQ(httpCacheMetadata.getStatusMessage(), metadata.getStatusMessage());
-    EXPECT_THAT(metadata.getResponseHeaders(), testutil::equalHeaders(httpCacheMetadata.getResponseHeaders()));
-    EXPECT_EQ(httpCacheMetadata.getResponseBodySize(), metadata.getResponseBodySize());
-    EXPECT_EQ(httpCacheMetadata.getSentRequestAtEpoch(), metadata.getSentRequestAtEpoch());
-    EXPECT_EQ(httpCacheMetadata.getReceivedResponseAtEpoch(), metadata.getReceivedResponseAtEpoch());
-    EXPECT_EQ(httpCacheMetadata.getCreatedAtEpoch(), metadata.getCreatedAtEpoch());
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
+    pMetadata = db.getMetadataAll(Key1);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_EQ(pHttpCacheMetadata->getKey(), pMetadata->getKey());
+    EXPECT_EQ(pHttpCacheMetadata->getUrl(), pMetadata->getUrl());
+    EXPECT_EQ(pHttpCacheMetadata->getHttpMethod(), pMetadata->getHttpMethod());
+    EXPECT_EQ(pHttpCacheMetadata->getStatusCode(), pMetadata->getStatusCode());
+    EXPECT_EQ(pHttpCacheMetadata->getStatusMessage(), pMetadata->getStatusMessage());
+    EXPECT_THAT(pMetadata->getResponseHeaders(), testutil::equalHeaders(pHttpCacheMetadata->getResponseHeaders()));
+    EXPECT_EQ(pHttpCacheMetadata->getResponseBodySize(), pMetadata->getResponseBodySize());
+    EXPECT_EQ(pHttpCacheMetadata->getSentRequestAtEpoch(), pMetadata->getSentRequestAtEpoch());
+    EXPECT_EQ(pHttpCacheMetadata->getReceivedResponseAtEpoch(), pMetadata->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pHttpCacheMetadata->getCreatedAtEpoch(), pMetadata->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
             endTime.epochTime()));
 }
 
 // updateMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsTrue_WhenExistKey)
+TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_UpdatesMatadata_WhenExistKey)
 {
     // Given: insert CacheMetadata in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCreate;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCreate = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadataForCreate);
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    HttpCacheMetadata httpCacheMetadata;
-    setHttpCacheMetadataForUpdate(Key1, httpCacheMetadata);
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
+    setHttpCacheMetadataForUpdate(Key1, pHttpCacheMetadata);
 
     // When: updateMetadata by exist key
-    // Then: return true and update metadate
+    // Then: update metadata in database
     Poco::Timestamp startTime;
-    EXPECT_TRUE(database.updateMetadata(Key1, &httpCacheMetadata));
+    database.updateMetadata(Key1, pHttpCacheMetadata);
     Poco::Timestamp endTime;
 
     // check updated metadata
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    EXPECT_TRUE(db.getMetadataAll(Key1, metadata));
-    EXPECT_EQ(httpCacheMetadata.getKey(), metadata.getKey());
-    EXPECT_EQ(httpCacheMetadata.getUrl(), metadata.getUrl());
-    EXPECT_EQ(httpCacheMetadata.getHttpMethod(), metadata.getHttpMethod());
-    EXPECT_EQ(httpCacheMetadata.getStatusCode(), metadata.getStatusCode());
-    EXPECT_EQ(httpCacheMetadata.getStatusMessage(), metadata.getStatusMessage());
-    EXPECT_THAT(metadata.getResponseHeaders(), testutil::equalHeaders(httpCacheMetadata.getResponseHeaders()));
-    EXPECT_EQ(httpCacheMetadata.getResponseBodySize(), metadata.getResponseBodySize());
-    EXPECT_EQ(httpCacheMetadata.getSentRequestAtEpoch(), metadata.getSentRequestAtEpoch());
-    EXPECT_EQ(httpCacheMetadata.getReceivedResponseAtEpoch(), metadata.getReceivedResponseAtEpoch());
-    EXPECT_EQ(httpCacheMetadata.getCreatedAtEpoch(), metadata.getCreatedAtEpoch());
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
+    pMetadata = db.getMetadataAll(Key1);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_EQ(pHttpCacheMetadata->getKey(), pMetadata->getKey());
+    EXPECT_EQ(pHttpCacheMetadata->getUrl(), pMetadata->getUrl());
+    EXPECT_EQ(pHttpCacheMetadata->getHttpMethod(), pMetadata->getHttpMethod());
+    EXPECT_EQ(pHttpCacheMetadata->getStatusCode(), pMetadata->getStatusCode());
+    EXPECT_EQ(pHttpCacheMetadata->getStatusMessage(), pMetadata->getStatusMessage());
+    EXPECT_THAT(pMetadata->getResponseHeaders(), testutil::equalHeaders(pHttpCacheMetadata->getResponseHeaders()));
+    EXPECT_EQ(pHttpCacheMetadata->getResponseBodySize(), pMetadata->getResponseBodySize());
+    EXPECT_EQ(pHttpCacheMetadata->getSentRequestAtEpoch(), pMetadata->getSentRequestAtEpoch());
+    EXPECT_EQ(pHttpCacheMetadata->getReceivedResponseAtEpoch(), pMetadata->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pHttpCacheMetadata->getCreatedAtEpoch(), pMetadata->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
             endTime.epochTime()));
 }
 
 // updateMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsFalse_WhenDatabaseDirectoryIsAbsent)
+TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ThrowsSqlIllegalStateException_WhenDatabaseDirectoryIsAbsent)
 {
     // Given: do not create database directory
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    HttpCacheMetadata httpCacheMetadata;
-    setHttpCacheMetadata(Key1, httpCacheMetadata);
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
+    setHttpCacheMetadata(Key1, pHttpCacheMetadata);
 
     // When: updateMetadata by not exist key
-    // Then: return false
-    EXPECT_FALSE(database.updateMetadata(Key1, &httpCacheMetadata));
+    // Then: throws SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateMetadata(Key1, pHttpCacheMetadata), SqlIllegalStateException, 100201);
 }
 
 // updateMetadata
-TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsFalse_WhenCannotWriteDatabase)
+TEST_F(HttpCacheDatabaseIntegrationTest,
+        updateMetadata_ThrowsSqlException_WhenCannotWriteDatabase)
 {
     // Given: set readonly to database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCreate;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCreate = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadataForCreate);
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
     TestFileUtil::setReadOnly(file.path());
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    HttpCacheMetadata httpCacheMetadata;
-    setHttpCacheMetadataForUpdate(Key1, httpCacheMetadata);
+    HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
+    setHttpCacheMetadataForUpdate(Key1, pHttpCacheMetadata);
 
     // When: updateMetadata by exist key
-    // Then: return false
-    EXPECT_FALSE(database.updateMetadata(Key1, &httpCacheMetadata));
+    // Then: throws SqlException
+
+    // database file を read only にして database にアクセスしたとき、
+    // Windows では SqliteDatabase の constructor の new Poco::Data::Session で Poco::Data::ConnectionFailedException
+    // が発生して easyhttpcpp::db::SqlIllegalStateException が throw されます。
+    // Linux では new Poco::Data::Session ではエラーとならず、Poco::Data::Statement::execute で
+    // Poco::Data::SQLite::ReadOnlyException が発生して easyhttpcpp::db::SqlExecutionException が throw されます。
+    // このため、このテストでは、_WIN32 でチェックする Exception を切り替えています。
+#ifdef _WIN32
+    // throws SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateMetadata(Key1, pHttpCacheMetadata), SqlIllegalStateException, 100201);
+#else
+    // throws SqlExecutionException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateMetadata(Key1, pHttpCacheMetadata), SqlExecutionException, 100202);
+#endif
 }
 
 // updateLastAccessedSec
@@ -537,84 +567,99 @@ TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsFalse_When
     // Given: no key in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    // When: deleteMetadata by not exist key
+    // When: updateLastAccessedSec by not exist key
     // Then: return false
     EXPECT_FALSE(database.updateLastAccessedSec(Key1));
 }
 
 // updateLastAccessedSec
-TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsTrue_WhenExistKey)
+TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsNormally_WhenExistKey)
 {
     // Given: insert cacheMetadata in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCreate;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCreate = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadataForCreate);
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
     Poco::Thread::sleep(1500);  // wait 1.5 sec. (for confirm to update lastAccessedSec))
 
-    // When: updateMetadata by exist key
-    // Then: return true and update lastAccessedSec
+    // When: updateLastAccessedSec by exist key
+    // Then: return normally and update lastAccessedSec
     Poco::Timestamp startTime;
     EXPECT_TRUE(database.updateLastAccessedSec(Key1));
     Poco::Timestamp endTime;
 
     // check updated metadata
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    EXPECT_TRUE(db.getMetadataAll(Key1, metadata));
-    EXPECT_THAT(metadata.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
+    pMetadata = db.getMetadataAll(Key1);
+    ASSERT_FALSE(pMetadata.isNull());
+    EXPECT_THAT(pMetadata->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
             endTime.epochTime()));
 }
 
 // updateLastAccessedSec
-TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsFalse_WhenCannotOopenDatabase)
+TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ThrowsSqlIllegalStateException_WhenCannotOopenDatabase)
 {
     // Given: do not create database directory
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    // When: deleteMetadata by not exist key
-    // Then: return false
-    EXPECT_FALSE(database.updateLastAccessedSec(Key1));
+    // When: updateLastAccessedSec by not exist key
+    // Then: throws SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateLastAccessedSec(Key1), SqlIllegalStateException, 100201);
 }
 
 // updateLastAccessedSec
-TEST_F(HttpCacheDatabaseIntegrationTest, updateLastAccessedSec_ReturnsFalse_WhenCannotWriteDatabase)
+TEST_F(HttpCacheDatabaseIntegrationTest,
+        updateLastAccessedSec_ThrowsSqlException_WhenCannotWriteDatabase)
 {
     // Given: set readonly to database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCreate;
-    ASSERT_TRUE(createDbCacheMetadata(databaseFile, Key1, metadataForCreate));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCreate = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadata(databaseFile, Key1, pMetadataForCreate);
 
     Poco::File file(HttpTestUtil::getDefaultCacheDatabaseFile());
     TestFileUtil::setReadOnly(file.path());
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
-    // When: updateMetadata by exist key
-    // Then: return false
-    EXPECT_FALSE(database.updateLastAccessedSec(Key1));
+    // When: updateLastAccessedSec by exist key
+    // Then: throws SqlException
+
+    // database file を read only にして database にアクセスしたとき、
+    // Windows では SqliteDatabase の constructor の new Poco::Data::Session で Poco::Data::ConnectionFailedException
+    // が発生して easyhttpcpp::db::SqlIllegalStateException が throw されます。
+    // Linux では new Poco::Data::Session ではエラーとならず、Poco::Data::Statement::execute で
+    // Poco::Data::SQLite::ReadOnlyException が発生して easyhttpcpp::db::SqlExecutionException が throw されます。
+    // このため、このテストでは、_WIN32 でチェックする Exception を切り替えています。
+#ifdef _WIN32
+    // throws SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateLastAccessedSec(Key1), SqlIllegalStateException, 100201);
+#else
+    // throws SqlExecutionException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.updateLastAccessedSec(Key1), SqlExecutionException, 100202);
+#endif
 }
 
 // enumerate
-TEST_F(HttpCacheDatabaseIntegrationTest, enumerate_ReturnsTrueAndNoEnumerate_WhenDatabaseIsEmpty)
+TEST_F(HttpCacheDatabaseIntegrationTest, enumerate_ReturnsNormallyAndNoEnumerate_WhenDatabaseIsEmpty)
 {
     // Given: no key in database
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     MockHttpCacheEnumerationListener mockHttpCacheEnumerationListener;
     EXPECT_CALL(mockHttpCacheEnumerationListener, onEnumerate(testing::_)).Times(0);
 
     // When: enumerate
-    // Then: return true
-    EXPECT_TRUE(database.enumerate(&mockHttpCacheEnumerationListener));
+    // Then: return normally
+    database.enumerate(&mockHttpCacheEnumerationListener);
 }
 
 namespace {
@@ -660,22 +705,22 @@ inline testing::Matcher<const HttpCacheEnumerationListener::EnumerationParam&> e
 
 // enumerate
 TEST_F(HttpCacheDatabaseIntegrationTest,
-        enumerate_ReturnsTrueAndEnumerateByOrderOfLastAccessedTime_WhenDatabaseExistsMedatada)
+        enumerate_ReturnsNormallyAndEnumerateByOrderOfLastAccessedTime_WhenDatabaseExistsMedatada)
 {
     // Given: insert CacheMetadata in database (lastAccessTime old -> new : Key3 -> Key1 -> Key2))
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
-    ASSERT_TRUE(createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key1,
-            EnumResponseBodySize1, EnumLastAccessedTime2, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    ASSERT_TRUE(createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key2,
-            EnumResponseBodySize2, EnumLastAccessedTime3, metadata2));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    ASSERT_TRUE(createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key3,
-            EnumResponseBodySize3, EnumLastAccessedTime1, metadata3));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1 = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key1,
+            EnumResponseBodySize1, EnumLastAccessedTime2, pMetadata1);
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2 = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key2,
+            EnumResponseBodySize2, EnumLastAccessedTime3, pMetadata2);
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata3 = new HttpCacheDatabase::HttpCacheMetadataAll();
+    createDbCacheMetadataWithBodySizeAndLastAccessedTime(databaseFile, Key3,
+            EnumResponseBodySize3, EnumLastAccessedTime1, pMetadata3);
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     MockHttpCacheEnumerationListener mockHttpCacheEnumerationListener;
     testing::InSequence seq;
@@ -687,23 +732,24 @@ TEST_F(HttpCacheDatabaseIntegrationTest,
             WillOnce(testing::Return(true));
 
     // When: enumerate
-    // Then: return true and onEnumerate will be called by order of lastAccessedTime.
-    EXPECT_TRUE(database.enumerate(&mockHttpCacheEnumerationListener));
+    // Then: return normally and onEnumerate will be called by order of lastAccessedTime.
+    database.enumerate(&mockHttpCacheEnumerationListener);
 }
 
 // enumerate
-TEST_F(HttpCacheDatabaseIntegrationTest, enumerate_ReturnsFalse_WhenDatabaseDirectoryIsAbsent)
+TEST_F(HttpCacheDatabaseIntegrationTest, enumerate_ThrowsSqlIllegalStateException_WhenDatabaseDirectoryIsAbsent)
 {
     // Given: do not create database directory
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     MockHttpCacheEnumerationListener mockHttpCacheEnumerationListener;
     EXPECT_CALL(mockHttpCacheEnumerationListener, onEnumerate(testing::_)).Times(0);
 
     // When: enumerate
-    // Then: return false
-    EXPECT_FALSE(database.enumerate(&mockHttpCacheEnumerationListener));
+    // Then: throws SqlIllegalStateException
+    EASYHTTPCPP_EXPECT_THROW_WITH_CAUSE(database.enumerate(&mockHttpCacheEnumerationListener),
+            SqlIllegalStateException, 100201);
 }
 
 // getMetadata (multi thread))
@@ -712,12 +758,12 @@ TEST_F(HttpCacheDatabaseIntegrationTest, getMetadata_ReturnsTrueAndGetMetadata_W
     // Given: insert CacheMetadata in database. each thread wait before call getMetadata.
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
     for (int i = 0; i < MultiThreadCount; i++) {
-        ASSERT_TRUE(createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), metadata));
+        createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), pMetadata);
     }
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     Poco::ThreadPool threadPool;
     for (int i = 0; i < MultiThreadCount; i++) {
@@ -756,12 +802,12 @@ TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsTrueAndDeleteMeta
     // Given: insert CacheMetadata in database. each thread wait before call deleteMetadata.
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
     for (int i = 0; i < MultiThreadCount; i++) {
-        ASSERT_TRUE(createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), metadata));
+        createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), pMetadata);
     }
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     Poco::ThreadPool threadPool;
     for (int i = 0; i < MultiThreadCount; i++) {
@@ -782,12 +828,11 @@ TEST_F(HttpCacheDatabaseIntegrationTest, deleteMetadata_ReturnsTrueAndDeleteMeta
     threadPool.joinAll();
 
     // Then: deleteMetadata succeeded
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCheck;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
     for (int i = 0; i < MultiThreadCount; i++) {
         std::string index = StringUtil::format("[%d]", i);
         EXPECT_TRUE(m_pExecutes[i]->isSuccess()) << index;
-        EXPECT_FALSE(db.getMetadataAll(m_pExecutes[i]->getKey(), metadataForCheck)) << index;
+        EXPECT_TRUE(db.getMetadataAll(m_pExecutes[i]->getKey()).isNull()) << index;
     }
 }
 
@@ -797,12 +842,12 @@ TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsTrueAndUpdateMeta
     // Given: insert CacheMetadata in database. each thread wait before call updateMetadata.
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
     for (int i = 0; i < MultiThreadCount; i++) {
-        ASSERT_TRUE(createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), metadata));
+        createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), pMetadata);
     }
 
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     Poco::ThreadPool threadPool;
     for (int i = 0; i < MultiThreadCount; i++) {
@@ -823,19 +868,20 @@ TEST_F(HttpCacheDatabaseIntegrationTest, updateMetadata_ReturnsTrueAndUpdateMeta
     threadPool.joinAll();
 
     // Then: updateMetadata succeeded
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCheck;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCheck;
     for (int i = 0; i < MultiThreadCount; i++) {
         std::string index = StringUtil::format("[%d]", i);
         EXPECT_TRUE(m_pExecutes[i]->isSuccess()) << index;
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutes[i]->getKey(), metadataForCheck)) << index;
+        pMetadataForCheck = db.getMetadataAll(m_pExecutes[i]->getKey());
+        ASSERT_FALSE(pMetadataForCheck.isNull()) << index;
         CacheMetadata::Ptr pCacheMetadata = static_cast<UpdateMetadataExecutionRunner*>
                 (m_pExecutes[i].get())->getCacheMetadata();
         EXPECT_FALSE(pCacheMetadata.isNull()) << index;
         if (!pCacheMetadata.isNull()) {
             HttpCacheMetadata* pHttpCacheMetadata = static_cast<HttpCacheMetadata*>(pCacheMetadata.get());
-            EXPECT_EQ(m_pExecutes[i]->getKey(), metadataForCheck.getKey()) << index;
-            EXPECT_EQ(pHttpCacheMetadata->getUrl(), metadataForCheck.getUrl()) << index;
+            EXPECT_EQ(m_pExecutes[i]->getKey(), pMetadataForCheck->getKey()) << index;
+            EXPECT_EQ(pHttpCacheMetadata->getUrl(), pMetadataForCheck->getUrl()) << index;
         }
     }
 }
@@ -847,13 +893,13 @@ TEST_F(HttpCacheDatabaseIntegrationTest,
     // Given: insert CacheMetadata in database. each thread wait before call updateLastAccessSec.
     ASSERT_TRUE(createDefaultCacheRootDir()) << "cannot create cache root directory.";
     Poco::Path databaseFile(HttpTestUtil::getDefaultCacheDatabaseFile());
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata = new HttpCacheDatabase::HttpCacheMetadataAll();
     for (int i = 0; i < MultiThreadCount; i++) {
-        ASSERT_TRUE(createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), metadata));
+        createDbCacheMetadata(databaseFile, StringUtil::format("Key%d", i), pMetadata);
     }
 
     Poco::Thread::sleep(1500);  // wait 1.5 sec. (for confirm to update lastAccessedSec))
-    HttpCacheDatabase database(databaseFile);
+    HttpCacheDatabase database(new HttpCacheDatabaseOpenHelper(databaseFile));
 
     Poco::ThreadPool threadPool;
     for (int i = 0; i < MultiThreadCount; i++) {
@@ -876,13 +922,14 @@ TEST_F(HttpCacheDatabaseIntegrationTest,
     Poco::Timestamp endTime;
 
     // Then: updateLastAccessedSec succeeded
-    HttpCacheDatabase db(databaseFile);
-    HttpCacheDatabase::HttpCacheMetadataAll metadataForCheck;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(databaseFile));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadataForCheck;
     for (int i = 0; i < MultiThreadCount; i++) {
         std::string index = StringUtil::format("[%d]", i);
         EXPECT_TRUE(m_pExecutes[i]->isSuccess()) << index;
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutes[i]->getKey(), metadataForCheck)) << index;
-        EXPECT_THAT(metadataForCheck.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
+        pMetadataForCheck = db.getMetadataAll(m_pExecutes[i]->getKey());
+        ASSERT_FALSE(pMetadataForCheck.isNull()) << index;
+        EXPECT_THAT(pMetadataForCheck->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime.epochTime(),
                 endTime.epochTime()));
     }
 }

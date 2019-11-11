@@ -41,15 +41,17 @@ void TestFileUtilImpl::changeAccessPermission(const std::string& absolutePath, u
 void TestFileUtilImpl::changePermission(LPCTSTR pPath, LPCTSTR pUser, DWORD permission, ACCESS_MODE mode)
 {
     const int TRUSTEE_NAME_LEN = 256;
-    TCHAR pathBuff[MAX_PATH + 1] = { 0 };
-    _tcsncpy(pathBuff, pPath, MAX_PATH);
+    size_t pathSize = _tcslen(pPath);
+    TCHAR* pathBuff = new TCHAR[pathSize + 1];
+    memset(pathBuff, 0, pathSize + 1);
+    _tcsncpy(pathBuff, pPath, pathSize);
 
     TCHAR nameBuff[TRUSTEE_NAME_LEN + 1] = { 0 };
     _tcsncpy(nameBuff, pUser, TRUSTEE_NAME_LEN);
 
     DWORD result;
 
-    // ƒtƒ@ƒCƒ‹‚Éİ’è‚³‚ê‚Ä‚¢‚éƒAƒNƒZƒXŒ ‚É‚Â‚¢‚Ä‚Ìî•ñ‚ğæ“¾.
+    // ãƒ•ã‚¡ã‚¤ãƒ«ã«è¨­å®šã•ã‚Œã¦ã„ã‚‹ã‚¢ã‚¯ã‚»ã‚¹æ¨©ã«ã¤ã„ã¦ã®æƒ…å ±ã‚’å–å¾—.
     PACL pAcl = NULL;
     PSECURITY_DESCRIPTOR pDescriptor = NULL;
 
@@ -63,10 +65,11 @@ void TestFileUtilImpl::changePermission(LPCTSTR pPath, LPCTSTR pUser, DWORD perm
         &pDescriptor);
     if (result != ERROR_SUCCESS) {
         EASYHTTPCPP_LOG_D(Tag, "Can not get named security info");
+        delete [] pathBuff;
         return;
     }
 
-    // ’Ç‰Á‚·‚éƒAƒNƒZƒXŒ ‚ğì¬
+    // è¿½åŠ ã™ã‚‹ã‚¢ã‚¯ã‚»ã‚¹æ¨©ã‚’ä½œæˆ.
     EXPLICIT_ACCESS access;
     BuildExplicitAccessWithName(&access,
         nameBuff,
@@ -74,23 +77,26 @@ void TestFileUtilImpl::changePermission(LPCTSTR pPath, LPCTSTR pUser, DWORD perm
         mode, // SET_ACCESS, DENY_ACCESS, GRANT_ACCESS
         CONTAINER_INHERIT_ACE | OBJECT_INHERIT_ACE);
 
-    // ƒAƒNƒZƒXŒ ‚ğ’Ç‰Á.
+    // ã‚¢ã‚¯ã‚»ã‚¹æ¨©ã‚’è¿½åŠ .
     pAcl = addACLExplicitAccess(pAcl, access);
     if (pAcl == NULL) {
         EASYHTTPCPP_LOG_E(Tag, "Can not add permission");
         ::LocalFree(pDescriptor);
+        delete [] pathBuff;
         return;
     }
-    // ƒAƒNƒZƒXŒ ‚ğƒtƒ@ƒCƒ‹‚Éİ’è
+    // ã‚¢ã‚¯ã‚»ã‚¹æ¨©ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã«è¨­å®š.
     if (!setDACL(pathBuff, pAcl)) {
         EASYHTTPCPP_LOG_E(Tag, "Can not set named security info");
         ::LocalFree(pAcl);
         ::LocalFree(pDescriptor);
+        delete [] pathBuff;
         return;
     }
 
     ::LocalFree(pAcl);
     ::LocalFree(pDescriptor);
+    delete [] pathBuff;
     return;
 }
 

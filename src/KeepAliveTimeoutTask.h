@@ -10,11 +10,13 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Util/TimerTask.h"
 
+#include "easyhttpcpp/HttpExports.h"
+
 namespace easyhttpcpp {
 
 class KeepAliveTimeoutListener;
 
-class KeepAliveTimeoutTask : public Poco::Util::TimerTask {
+class EASYHTTPCPP_HTTP_INTERNAL_API KeepAliveTimeoutTask : public Poco::Util::TimerTask {
 public:
     typedef Poco::AutoPtr<KeepAliveTimeoutTask> Ptr;
 

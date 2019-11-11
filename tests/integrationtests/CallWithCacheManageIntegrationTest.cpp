@@ -161,16 +161,13 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_RemovesOldCacheData_WhenGetMe
     std::string responseBody3 = pResponse3->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url1);
-    ASSERT_TRUE(db.getMetadataAll(key1, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    ASSERT_FALSE(db.getMetadataAll(key1).isNull());
     std::string key2 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url2);
-    ASSERT_TRUE(db.getMetadataAll(key2, metadata2));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    ASSERT_FALSE(db.getMetadataAll(key2).isNull());
     std::string key3 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url3);
-    ASSERT_TRUE(db.getMetadataAll(key3, metadata3));
+    ASSERT_FALSE(db.getMetadataAll(key3).isNull());
 
     // request 4: totalSize = 400, oldest request is removed.
     Request::Builder requestBuilder4;
@@ -186,12 +183,11 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_RemovesOldCacheData_WhenGetMe
     std::string responseBody4 = pResponse4->getBody()->toString();
 
     // Then: request1(oldest request) is removed.
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-    EXPECT_TRUE(db.getMetadataAll(key2, metadata2));
-    EXPECT_TRUE(db.getMetadataAll(key3, metadata3));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata4;
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key2).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key3).isNull());
     std::string key4 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url4);
-    EXPECT_TRUE(db.getMetadataAll(key4, metadata4));
+    EXPECT_FALSE(db.getMetadataAll(key4).isNull());
 
     // check cached file
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
@@ -268,16 +264,13 @@ TEST_F(CallWithCacheManageIntegrationTest,
     std::string responseBody1_2 = pResponse1_2->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key1 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url1);
-    ASSERT_TRUE(db.getMetadataAll(key1, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    ASSERT_FALSE(db.getMetadataAll(key1).isNull());
     std::string key2 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url2);
-    ASSERT_TRUE(db.getMetadataAll(key2, metadata2));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    ASSERT_FALSE(db.getMetadataAll(key2).isNull());
     std::string key3 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url3);
-    ASSERT_TRUE(db.getMetadataAll(key3, metadata3));
+    ASSERT_FALSE(db.getMetadataAll(key3).isNull());
 
     // request 4: tptalSize = 400, oldest request is removed.
     Request::Builder requestBuilder4;
@@ -293,12 +286,11 @@ TEST_F(CallWithCacheManageIntegrationTest,
     std::string responseBody4 = pResponse4->getBody()->toString();
 
     // Then: request2 is removed. result LRU order: request3 -> request1 -> request4
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    EXPECT_FALSE(db.getMetadataAll(key2, metadata2));
-    EXPECT_TRUE(db.getMetadataAll(key3, metadata3));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata4;
+    EXPECT_FALSE(db.getMetadataAll(key1).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key2).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key3).isNull());
     std::string key4 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url4);
-    EXPECT_TRUE(db.getMetadataAll(key4, metadata4));
+    EXPECT_FALSE(db.getMetadataAll(key4).isNull());
 
     // check cached file
     Poco::File responseBodyFile1(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
@@ -322,7 +314,8 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     // prepare test data
     Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
     cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
+    Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+            EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb));
     srcTestData.copyTo(HttpTestUtil::getDefaultCachePath());
 
     // test data LRU (Query) old -> new
@@ -367,15 +360,11 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     std::string key5 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url5);
 
     // check database (remain 3, 1, 4)
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    EXPECT_TRUE(db.getMetadataAll(key3, metadata3));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata4;
-    EXPECT_TRUE(db.getMetadataAll(key4, metadata4));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata5;
-    EXPECT_FALSE(db.getMetadataAll(key5, metadata5));
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    EXPECT_FALSE(db.getMetadataAll(key3).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key1).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key4).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key5).isNull());
 
     // check cached response body
     Poco::File responseBodyFile3(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
@@ -399,12 +388,11 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     std::string responseBody6 = pResponse6->getBody()->toString();
 
     // check database
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
-    EXPECT_TRUE(db.getMetadataAll(key1, metadata1));
-    EXPECT_TRUE(db.getMetadataAll(key4, metadata4));
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key1).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key4).isNull());
     std::string key6 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url6);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata6;
-    EXPECT_TRUE(db.getMetadataAll(key6, metadata6));
+    EXPECT_FALSE(db.getMetadataAll(key6).isNull());
 
     // check cached response body
     EXPECT_FALSE(responseBodyFile3.exists());
@@ -425,13 +413,12 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     std::string responseBody7 = pResponse7->getBody()->toString();
 
     // check database
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-    EXPECT_TRUE(db.getMetadataAll(key4, metadata4));
-    EXPECT_TRUE(db.getMetadataAll(key6, metadata6));
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key4).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key6).isNull());
     std::string key7 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url7);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata7;
-    EXPECT_TRUE(db.getMetadataAll(key7, metadata7));
+    EXPECT_FALSE(db.getMetadataAll(key7).isNull());
 
     // check cached response body
     EXPECT_FALSE(responseBodyFile3.exists());
@@ -453,14 +440,13 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_CreateCacheStrategyAndExecute
     std::string responseBody8 = pResponse8->getBody()->toString();
 
     // check database
-    EXPECT_FALSE(db.getMetadataAll(key3, metadata3));
-    EXPECT_FALSE(db.getMetadataAll(key1, metadata1));
-    EXPECT_FALSE(db.getMetadataAll(key4, metadata4));
-    EXPECT_TRUE(db.getMetadataAll(key6, metadata6));
-    EXPECT_TRUE(db.getMetadataAll(key7, metadata7));
+    EXPECT_TRUE(db.getMetadataAll(key3).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key1).isNull());
+    EXPECT_TRUE(db.getMetadataAll(key4).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key6).isNull());
+    EXPECT_FALSE(db.getMetadataAll(key7).isNull());
     std::string key8 = HttpUtil::makeCacheKey(Request::HttpMethodGet, url8);
-    HttpCacheDatabase::HttpCacheMetadataAll metadata8;
-    EXPECT_TRUE(db.getMetadataAll(key8, metadata8));
+    EXPECT_FALSE(db.getMetadataAll(key8).isNull());
 
     // check cached response body
     EXPECT_FALSE(responseBodyFile3.exists());
@@ -536,10 +522,9 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_ReturnsResponse_WhenGetAfterP
     std::string responseBody3 = pResponse3->getBody()->toString();
 
     // Then: create cache
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata3));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -609,14 +594,15 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_ReturnsRespnseAndCreateCache_
     // Then: create Cache
     std::time_t startSec2 = startTime2.epochTime();
     std::time_t endSec2 = endTime2.epochTime();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_THAT(metadata2.getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_THAT(pMetadata2->getSentRequestAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getReceivedResponseAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getCreatedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startSec2, endSec2));
 
     // check cached response body
     EXPECT_THAT(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url),
@@ -651,12 +637,13 @@ TEST_F(CallWithCacheManageIntegrationTest, execute_ReturnsRespnseAndCreateCache_
     Poco::Timestamp endTime3;
 
     // not replace cache.
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata3));
-    EXPECT_EQ(metadata2.getSentRequestAtEpoch(), metadata3.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata2.getReceivedResponseAtEpoch(), metadata3.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata2.getCreatedAtEpoch(), metadata3.getCreatedAtEpoch());
-    EXPECT_THAT(metadata3.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime3.epochTime(),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata3;
+    pMetadata3 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata3.isNull());
+    EXPECT_EQ(pMetadata2->getSentRequestAtEpoch(), pMetadata3->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata2->getReceivedResponseAtEpoch(), pMetadata3->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata2->getCreatedAtEpoch(), pMetadata3->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata3->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime3.epochTime(),
             endTime3.epochTime()));
 }
 

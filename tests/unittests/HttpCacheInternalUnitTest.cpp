@@ -48,7 +48,7 @@ TEST_F(HttpCacheInternalUnitTest, constructor_setsPathAndMaxSize_WhenSpecifiedPa
     // When: create HttpCacheInternal
     HttpCacheInternal httpCache(path, maxSize);
 
-    // Then: getPath get specified parameter and default value
+    // Then: getPath get specified absolute path and default value
     const Poco::Path& gottenPath = httpCache.getPath();
     EXPECT_EQ(path.toString(), gottenPath.toString());
     EXPECT_EQ(maxSize, httpCache.getMaxSize());
@@ -56,7 +56,7 @@ TEST_F(HttpCacheInternalUnitTest, constructor_setsPathAndMaxSize_WhenSpecifiedPa
     Poco::Path expectTempDir(
             StringUtil::format("%s%s", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory));
     Poco::Path actualTempDir(httpCache.getTempDirectory());
-    EXPECT_EQ(expectTempDir.toString(), actualTempDir.toString());
+    EXPECT_EQ(expectTempDir.absolute().toString(), actualTempDir.toString());
     easyhttpcpp::common::CacheManager::Ptr pCacheManager = httpCache.getCacheManager();
     ASSERT_FALSE(pCacheManager.isNull());
 }
@@ -71,15 +71,15 @@ TEST_F(HttpCacheInternalUnitTest, getTempDirectory_ReturnsTempDirectoryAndCreate
     HttpCacheInternal httpCache(path, DefaultCacheMaxSize);
     Poco::Path actualTmpPath(
             StringUtil::format("%s%s", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory));
-    Poco::File actualTempDir(actualTmpPath);
+    Poco::File actualTempDir(actualTmpPath.absolute());
     ASSERT_FALSE(actualTempDir.exists());
 
     // When: call tempDirectory
     const std::string tempDirStr = httpCache.getTempDirectory();
 
-    // Then: return temp directory and create temp directpry
+    // Then: return temp directory of absolute path and create temp directpry
     Poco::Path gottenTmpPath(tempDirStr);
-    EXPECT_EQ(actualTmpPath.toString(), gottenTmpPath.toString());
+    EXPECT_EQ(actualTmpPath.absolute().toString(), gottenTmpPath.toString());
     Poco::File gottenTempDir(gottenTmpPath);
     EXPECT_TRUE(gottenTempDir.exists());
 }
@@ -95,19 +95,19 @@ TEST_F(HttpCacheInternalUnitTest, getTempDirectory_ReturnsTempDirectoryAndNoEffe
     HttpCacheInternal httpCache(path, DefaultCacheMaxSize);
     Poco::Path actualTmpPath(
             StringUtil::format("%s%s", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory));
-    Poco::File actualTempDir(actualTmpPath);
+    Poco::File actualTempDir(actualTmpPath.absolute());
     actualTempDir.createDirectories();
     ASSERT_TRUE(actualTempDir.exists());
-    Poco::File testFile(StringUtil::format(
-            "%s%stest.dat", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory));
+    Poco::File testFile(Poco::Path(StringUtil::format(
+            "%s%stest.dat", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory)).absolute());
     ASSERT_TRUE(testFile.createFile());
 
     // When: call tempDirectory
     const std::string tempDirStr = httpCache.getTempDirectory();
 
-    // Then: return temp directory and no effect temp directory
+    // Then: return temp directory of absolute path and no effect temp directory
     Poco::Path gottenTmpPath(tempDirStr);
-    EXPECT_EQ(actualTmpPath.toString(), gottenTmpPath.toString());
+    EXPECT_EQ(actualTmpPath.absolute().toString(), gottenTmpPath.toString());
     Poco::File gottenTempDir(gottenTmpPath);
     EXPECT_TRUE(gottenTempDir.exists());
     EXPECT_TRUE(testFile.exists());
@@ -122,9 +122,8 @@ TEST_F(HttpCacheInternalUnitTest, getTempDirectory_ThrowsException_WhenIOErrorOc
     HttpCacheInternal httpCache(path, DefaultCacheMaxSize);
     Poco::Path actualTmpPath(
             StringUtil::format("%s%s", EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), DefaultCacheTempDirectory));
-    Poco::File actualTempDir(actualTmpPath);
     Poco::Path parentPath = actualTmpPath.parent();
-    Poco::File parentDir(parentPath);
+    Poco::File parentDir(parentPath.absolute());
     parentDir.createDirectories();
     TestFileUtil::changeAccessPermission(parentPath, EASYHTTPCPP_FILE_PERMISSION_ALLUSER_READ_ONLY);
 

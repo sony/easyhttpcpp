@@ -110,10 +110,9 @@ set_target_properties(${LIBRARY_TARGET_NAME}
                       )
 
 target_link_libraries(${LIBRARY_TARGET_NAME}
-                      Poco::Foundation
-                      Poco::Data Poco::DataSQLite
-                      Poco::Net Poco::NetSSL Poco::Crypto
-                      OpenSSL::SSL OpenSSL::Crypto)
+	              ${Poco_LIBRARIES}
+                      ${OPENSSL_SSL_LIBRARY}
+                      ${OPENSSL_CRYPTO_LIBRARY})
 
 target_include_directories(${LIBRARY_TARGET_NAME}
                            PUBLIC

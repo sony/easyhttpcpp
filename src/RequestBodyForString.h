@@ -7,11 +7,12 @@
 
 #include <string>
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
 
-class RequestBodyForString : public RequestBody {
+class EASYHTTPCPP_HTTP_INTERNAL_API RequestBodyForString : public RequestBody {
 public:
     RequestBodyForString(MediaType::Ptr pMediaType, const std::string& content);
     virtual ~RequestBodyForString();

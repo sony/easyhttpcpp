@@ -26,7 +26,7 @@ TEST(HttpCacheUnitTest, create_createsHttpCacheWithPathAndMaxSize_WhenSpecifiedP
     // When: call createCache
     HttpCache::Ptr pCache = HttpCache::createCache(path, maxSize);
 
-    // Then: getPath get specified path and maxSize
+    // Then: getPath get specified absolute path and maxSize
     const Poco::Path& gottenPath = pCache->getPath();
     EXPECT_EQ(path.toString(), gottenPath.toString());
     EXPECT_EQ(maxSize, pCache->getMaxSize());

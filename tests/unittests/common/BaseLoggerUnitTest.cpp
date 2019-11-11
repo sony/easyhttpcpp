@@ -41,19 +41,18 @@ class BaseLoggerUnitTest : public testing::Test {
 protected:
 
     Poco::SharedPtr<BaseLogger> m_pBaseLogger;
+    std::string m_loggerName;
 
-    void SetUp()
+    virtual void SetUp()
     {
         ASSERT_NO_THROW(m_pBaseLogger = new BaseLogger()) << "Failed to create BaseLogger.";
+        m_loggerName = m_pBaseLogger->getLogWriter()->getName();
     }
 
-    void TearDown()
+    virtual void TearDown()
     {
         // Poco::Logger cleanup
-        // Poco::Logger::shutdown()は、LoggerMapをclearする為、subclassのLoggerでresetToDefaultする必要がある
-        Poco::Logger::shutdown();
-        CoreLogger::getInstance()->resetToDefaults();
-        m_pBaseLogger->resetToDefaults();
+        Poco::Logger::destroy(m_loggerName);
     }
 
     class MockLogWriter : public LogWriter {

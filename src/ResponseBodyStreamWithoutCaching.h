@@ -5,6 +5,8 @@
 #ifndef EASYHTTPCPP_RESPONSEBODYSTREAMWITHOURCACHING_H_INCLUDED
 #define EASYHTTPCPP_RESPONSEBODYSTREAMWITHOURCACHING_H_INCLUDED
 
+#include "easyhttpcpp/HttpExports.h"
+
 #include "ConnectionInternal.h"
 #include "ConnectionPoolInternal.h"
 #include "HttpEngine.h"
@@ -12,7 +14,7 @@
 
 namespace easyhttpcpp {
 
-class ResponseBodyStreamWithoutCaching : public ResponseBodyStreamInternal {
+class EASYHTTPCPP_HTTP_INTERNAL_API ResponseBodyStreamWithoutCaching : public ResponseBodyStreamInternal {
 public:
     ResponseBodyStreamWithoutCaching(std::istream& content, ConnectionInternal::Ptr pConnectionInternal,
             ConnectionPoolInternal::Ptr pConnectionPoolInternal);

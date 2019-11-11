@@ -10,6 +10,7 @@
 #include "Poco/Util/TimerTask.h"
 
 #include "easyhttpcpp/Connection.h"
+#include "easyhttpcpp/HttpExports.h"
 
 #include "EasyHttpContext.h"
 #include "HttpTypedefs.h"
@@ -20,7 +21,7 @@ class ConnectionPoolInternal;
 class ConnectionStatusListener;
 class KeepAliveTimeoutTask;
 
-class ConnectionInternal : public Connection {
+class EASYHTTPCPP_HTTP_INTERNAL_API ConnectionInternal : public Connection {
 public:
     typedef Poco::AutoPtr<ConnectionInternal> Ptr;
 

@@ -12,10 +12,12 @@
 #include "Poco/Net/HTTPRequestHandlerFactory.h"
 #include "Poco/Net/HTTPRequestHandler.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class HttpTestRequestHandlerFactory : public Poco::Net::HTTPRequestHandlerFactory {
+class EASYHTTPCPP_TESTUTIL_API HttpTestRequestHandlerFactory : public Poco::Net::HTTPRequestHandlerFactory {
 public:
     HttpTestRequestHandlerFactory();
     virtual ~HttpTestRequestHandlerFactory();

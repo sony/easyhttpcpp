@@ -409,7 +409,7 @@ Headers::Ptr HttpCacheStrategy::combineCacheAndNetworkHeader(Response::Ptr pCach
         if (Poco::icompare(it->first, HttpConstants::HeaderNames::Warning) == 0) {
             if (Poco::icompare(it->second, 1, "1") == 0) {
                 // drop 1xx warning
-                EASYHTTPCPP_LOG_D(Tag, "combineCacheAndNetworkHeader: drop from cached header . [%s]",
+                EASYHTTPCPP_LOG_D(Tag, "combineCacheAndNetworkHeader: drop from cached header . [%s]:[%s]",
                         it->first.c_str(), it->second.c_str());
                 continue;
             }

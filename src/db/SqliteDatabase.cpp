@@ -5,33 +5,25 @@
 #include "Poco/Any.h"
 #include "Poco/Data/SQLite/SQLiteException.h"
 #include "Poco/Delegate.h"
-#include "Poco/Exception.h"
 #include "Poco/SharedPtr.h"
 #include "Poco/Data/Session.h"
 #include "Poco/Data/SQLite/Notifier.h"
 
 #include "easyhttpcpp/common/CoreLogger.h"
+#include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/common/StringUtil.h"
 #include "easyhttpcpp/db/ContentValues.h"
 #include "easyhttpcpp/db/SqlException.h"
 #include "easyhttpcpp/db/SqliteDatabase.h"
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
 
+using easyhttpcpp::common::FileUtil;
 using easyhttpcpp::common::StringUtil;
+using easyhttpcpp::db::SqlDatabaseCorruptException;
 
 namespace {
 
 const std::string Tag = "SqliteDatabase";
-
-void checkForDatabaseCorruption(const std::string& funcName, const Poco::Exception& exception) {
-    if (dynamic_cast<const Poco::Data::SQLite::CorruptImageException*> (&exception)) {
-        EASYHTTPCPP_LOG_W(Tag, "%s: Database got corrupted.", funcName.c_str());
-        EASYHTTPCPP_LOG_D(Tag, "%s: Database got corrupted. Details: %s", funcName.c_str(), exception.message().c_str());
-
-        throw easyhttpcpp::db::SqlDatabaseCorruptException(
-                "Database got corrupted. You might have to delete the database to recover.", exception);
-    }
-}
 
 } /* namespace */
 
@@ -45,8 +37,9 @@ SqliteDatabase::SqliteDatabase(const std::string& path) : m_opened(false)
         throw SqlIllegalStateException("Can't create database. Please set the database file path.");
     }
 
+    m_path = path;
     try {
-        m_pSession = new Poco::Data::Session("SQLite", path);
+        m_pSession = new Poco::Data::Session("SQLite", FileUtil::convertToAbsolutePathString(path, true));
         // TODO can we use Session#isConnected?
         m_opened = true;
     } catch (const Poco::Exception& e) {
@@ -245,8 +238,6 @@ void SqliteDatabase::beginTransaction()
     try {
         m_pSession->begin();
     } catch (const Poco::Exception& e) {
-        checkForDatabaseCorruption(__func__, e);
-
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in beginTransaction %s", e.message().c_str());
         throw SqlIllegalStateException("Can't begin transaction", e);
     }
@@ -261,8 +252,6 @@ void SqliteDatabase::endTransaction()
             m_pSession->rollback();
         }
     } catch (const Poco::Exception& e) {
-        checkForDatabaseCorruption(__func__, e);
-
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in endTransaction %s", e.message().c_str());
         throw SqlIllegalStateException("Can't end transaction", e);
     }
@@ -275,8 +264,6 @@ void SqliteDatabase::setTransactionSuccessful()
     try {
         m_pSession->commit();
     } catch (const Poco::Exception& e) {
-        checkForDatabaseCorruption(__func__, e);
-
         EASYHTTPCPP_LOG_D(Tag, "catch Exception in setTransactionSuccessful %s", e.message().c_str());
         throw SqlIllegalStateException("Can't set transaction successful", e);
     }
@@ -289,7 +276,7 @@ unsigned int SqliteDatabase::getVersion()
     SqliteCursor::Ptr pCursor = rawQuery(sql, NULL);
     int version = pCursor->getInt(0);
     if (version < 0) {
-        EASYHTTPCPP_LOG_W(Tag, "The value of version is negative.");
+        EASYHTTPCPP_LOG_D(Tag, "The value of version is negative.");
         return 0;
     }
     return static_cast<unsigned int>(version);
@@ -333,11 +320,32 @@ void SqliteDatabase::reopen()
     }
 }
 
+void SqliteDatabase::setDatabaseCorruptionListener(SqliteDatabaseCorruptionListener::Ptr pListener)
+{
+    Poco::FastMutex::ScopedLock lock(m_mutex);
+    m_pDatabaseCorruptionListener = pListener;
+}
+
 void SqliteDatabase::throwExceptionIfIllegalState()
 {
     if (!m_pSession || !m_opened) {
         EASYHTTPCPP_LOG_D(Tag, "Can not continue processing because of illegal state");
         throw SqlIllegalStateException("SqliteDatabase Session is not created");
+    }
+}
+
+void SqliteDatabase::checkForDatabaseCorruption(const std::string& funcName, const Poco::Exception& exception) {
+    if (dynamic_cast<const Poco::Data::SQLite::CorruptImageException*> (&exception)) {
+        EASYHTTPCPP_LOG_D(Tag, "%s: Database got corrupted. Details: %s", funcName.c_str(), exception.message().c_str());
+
+        SqlDatabaseCorruptException::Ptr pDbException = new SqlDatabaseCorruptException(
+                "Database got corrupted. You might have to delete the database to recover.", exception);
+        if (m_pDatabaseCorruptionListener) {
+            EASYHTTPCPP_LOG_D(Tag, "call DatabaseCorruptionListener %s:", m_path.c_str());
+            m_pDatabaseCorruptionListener->onDatabaseCorrupt(m_path, pDbException);
+            EASYHTTPCPP_LOG_D(Tag, "return from DatabaseCorruptionListener");
+        }
+        throw *(pDbException.cast<SqlDatabaseCorruptException>());
     }
 }
 

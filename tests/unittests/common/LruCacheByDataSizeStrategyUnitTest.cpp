@@ -15,7 +15,7 @@ namespace easyhttpcpp {
 namespace common {
 namespace test {
 
-static const size_t DefaultMaxSise = 500;
+static const size_t DefaultMaxSize = 500;
 static const char* const Key1 = "key1";
 static const char* const Key2 = "key2";
 static const char* const Key3 = "key3";
@@ -53,7 +53,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, add_ReturnsFalse_WhenFreeSpaceAndList
             WillOnce(testing::Return(false));
 
     // Given: setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     cacheStrategy.setListener(&m_mockCacheStrategyListener);
 
     // When: call add and listener return false
@@ -75,7 +75,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, add_ReturnsTrue_WhenFreeSpaceAndListe
             WillOnce(testing::Return(true));
 
     // Given: setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     cacheStrategy.setListener(&m_mockCacheStrategyListener);
 
     // When: call add and listener return true
@@ -155,7 +155,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, add_ReturnsTrue_WhenFreeSpaceAndNoSet
     CacheInfoWithDataSize::Ptr pCacheInfo = new CacheInfoWithDataSize(Key1, DataSize1);
 
     // Given: do not call setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
 
     // When: call add
     // Then: return true and add to list
@@ -169,11 +169,22 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, add_ReturnsTrue_WhenFreeSpaceAndNoSet
     EXPECT_EQ(*pCacheInfo, *pGottenCacheInfo);
 }
 
+// add
+TEST_F(LruCacheByDataSizeStrategyUnitTest, add_ReturnsFalse_WhenCalledWithNullCacheInfo)
+{
+    // Given: declaration of cacheStrategy
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
+
+    // When: call add with null
+    // Then: return false
+    ASSERT_FALSE(cacheStrategy.add(Key1, NULL));
+}
+
 // update
 TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsFalse_WhenFreeSpaceAndListenerReturnsFalse)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -200,7 +211,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsFalse_WhenFreeSpaceAndL
 TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsTrue_WhenFreeSpaceAndListenerReturnsTrue)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -317,7 +328,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsFalse_WhenNoFreeSpaceAn
 TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsTrue_WhenFreeSpaceAndNotExistKeyAndListenerReturnsTrue)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -344,7 +355,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsTrue_WhenFreeSpaceAndNo
 TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsTrue_WhenFreeSpaceAndNoListener)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -362,11 +373,22 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsTrue_WhenFreeSpaceAndNo
     EXPECT_EQ(*pCacheInfoForUpdate, *pGottenCacheInfo);
 }
 
+// update
+TEST_F(LruCacheByDataSizeStrategyUnitTest, update_ReturnsFalse_WhenCalledWithNullCacheInfo)
+{
+    // Given: declaration of cacheStrategy
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
+
+    // When: call update with null
+    // Then: return false
+    ASSERT_FALSE(cacheStrategy.update(Key1, NULL));
+}
+
 // remove
 TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsFalseAndDoesNotCallListener_WhenNotExistKey)
 {
     // Given: do not add key and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     cacheStrategy.setListener(&m_mockCacheStrategyListener);
 
     EXPECT_CALL(m_mockCacheStrategyListener, onRemove(Key1)).Times(0);
@@ -380,7 +402,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsFalseAndDoesNotCallList
 TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsFalse_WhenExistsKeyAndListenerReturnsFalse)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -402,7 +424,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsFalse_WhenExistsKeyAndL
 TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsTrue_WhenExistsKeyAndListenerReturnsTrue)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -426,7 +448,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsTrue_WhenExistsKeyAndLi
 TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsTrue_WhenExistsKeyAndNoListener)
 {
     // Given: add Key1 and do not setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -445,7 +467,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, remove_ReturnsTrue_WhenExistsKeyAndNo
 TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNullAndDoesNotCallListener_WhenNotExistKey)
 {
     // Given: do not add key and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     cacheStrategy.setListener(&m_mockCacheStrategyListener);
 
     EXPECT_CALL(m_mockCacheStrategyListener, onGet(Key1, testing::_)).Times(0);
@@ -459,7 +481,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNullAndDoesNotCallListener
 TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNull_WhenExistsKeyAndListenerReturnsFalse)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -477,7 +499,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNull_WhenExistsKeyAndListe
 TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNotNull_WhenExistsKeyAndListenerReturnsTrue)
 {
     // Given: add Key1 and setListener
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, DataSize1);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -539,7 +561,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, get_ReturnsNotNullAndMovesNewestOfLru
 TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrue_WhenListIsEmptyAndMayDeleteIfBustIsTrue)
 {
     // Given: do not add list
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
 
     // When: call clear
     // Then: return true and list is empty
@@ -551,7 +573,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrue_WhenListIsEmptyAndM
 TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrueAndClearsList_WhenListIsNotEmptyAndMayDeleteIfBustIsTrue)
 {
     // Given: add to list
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, 100);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
     CacheInfoWithDataSize::Ptr pCacheInfo2 = new CacheInfoWithDataSize(Key2, 100);
@@ -570,7 +592,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrueAndClearsList_WhenLi
 TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrue_WhenListIsEmptyAndMayDeleteIfBustIsFalse)
 {
     // Given: do not add list
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
 
     // When: call clear
     // Then: return true and list is empty
@@ -582,7 +604,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrue_WhenListIsEmptyAndM
 TEST_F(LruCacheByDataSizeStrategyUnitTest, clear_ReturnsTrueAndClearsList_WhenListIsNotEmptyAndMayDeleteIfBustIsFalse)
 {
     // Given: add to list
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, 100);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
     CacheInfoWithDataSize::Ptr pCacheInfo2 = new CacheInfoWithDataSize(Key2, 100);
@@ -737,7 +759,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, getMaxSize_ReturnsMaxSize)
 TEST_F(LruCacheByDataSizeStrategyUnitTest, getTotalSize_ReturnsZero_WhenAfterCreateLruCacheByDataSizeStrategy)
 {
     // Given: create LruCacheByDataSizeStrategy
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
 
     // When: call getTotalSize
     // Then: return 0
@@ -748,7 +770,7 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, getTotalSize_ReturnsZero_WhenAfterCre
 TEST_F(LruCacheByDataSizeStrategyUnitTest, isEmpty_ReturnsFalse_WhenAfterAdd)
 {
     // Given: create LruCacheByDataSizeStrategy and add cacheInfo
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
     CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, 100);
     ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
 
@@ -761,11 +783,34 @@ TEST_F(LruCacheByDataSizeStrategyUnitTest, isEmpty_ReturnsFalse_WhenAfterAdd)
 TEST_F(LruCacheByDataSizeStrategyUnitTest, isEmpty_ReturnsTrue_WhenAfterCreateLruCacheByDataSizeStrategy)
 {
     // Given: create LruCacheByDataSizeStrategy
-    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSise);
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
 
     // When: call isEmpty
     // Then: return true
     EXPECT_TRUE(cacheStrategy.isEmpty());
+}
+
+// reset
+TEST_F(LruCacheByDataSizeStrategyUnitTest, reset_ClearsList)
+{
+    // Given: add to list
+    LruCacheByDataSizeStrategy cacheStrategy(DefaultMaxSize);
+    CacheInfoWithDataSize::Ptr pCacheInfo1 = new CacheInfoWithDataSize(Key1, 100);
+    ASSERT_TRUE(cacheStrategy.add(Key1, pCacheInfo1));
+    CacheInfoWithDataSize::Ptr pCacheInfo2 = new CacheInfoWithDataSize(Key2, 100);
+    ASSERT_TRUE(cacheStrategy.add(Key2, pCacheInfo2));
+    CacheInfoWithDataSize::Ptr pCacheInfo3 = new CacheInfoWithDataSize(Key3, 100);
+    ASSERT_TRUE(cacheStrategy.add(Key3, pCacheInfo3));
+    ASSERT_EQ(300, cacheStrategy.getTotalSize());
+
+    cacheStrategy.setListener(&m_mockCacheStrategyListener);
+
+    EXPECT_CALL(m_mockCacheStrategyListener, onRemove(Key1)).Times(0);
+
+    // When: call reset
+    // Then: list is empty
+    cacheStrategy.reset();
+    EXPECT_EQ(0, cacheStrategy.getTotalSize());
 }
 
 } /* namespace test */

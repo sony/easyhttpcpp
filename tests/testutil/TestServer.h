@@ -11,13 +11,14 @@
 #include "Poco/Net/HTTPServer.h"
 
 #include "HttpTestRequestHandlerFactory.h"
+#include "TestUtilExports.h"
 
 namespace easyhttpcpp {
 namespace testutil {
 
 class HttpTestRequestHandlerFactory;
 
-class TestServer {
+class EASYHTTPCPP_TESTUTIL_API TestServer {
 public:
     TestServer();
     virtual ~TestServer();

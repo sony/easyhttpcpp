@@ -12,12 +12,13 @@
 #include "Poco/Timestamp.h"
 
 #include "easyhttpcpp/Headers.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
 
 namespace easyhttpcpp {
 
-class HttpCacheStrategy : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheStrategy : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<HttpCacheStrategy> Ptr;
 

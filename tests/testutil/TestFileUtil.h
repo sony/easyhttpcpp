@@ -11,6 +11,8 @@
 
 #include "Poco/Path.h"
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
@@ -29,11 +31,12 @@ namespace testutil {
 #define EASYHTTPCPP_FILE_PERMISSION_ALLUSER_EXECUTE_ONLY (S_IXUSR | S_IXGRP | S_IXOTH)
 #endif
 
-class TestFileUtil {
+class EASYHTTPCPP_TESTUTIL_API TestFileUtil {
 public:
     static void changeAccessPermission(const Poco::Path& absolutePath, unsigned int mode);
     static void setReadOnly(const Poco::Path& path);
     static void setFullAccess(const Poco::Path& path);
+    static void appendLongPathDir(Poco::Path& path);
 };
 
 } /* namespace testutil */

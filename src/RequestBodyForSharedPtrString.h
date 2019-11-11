@@ -9,11 +9,12 @@
 
 #include "Poco/SharedPtr.h"
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/RequestBody.h"
 
 namespace easyhttpcpp {
 
-class RequestBodyForSharedPtrString : public RequestBody {
+class EASYHTTPCPP_HTTP_INTERNAL_API RequestBodyForSharedPtrString : public RequestBody {
 public:
     RequestBodyForSharedPtrString(MediaType::Ptr pMediaType, Poco::SharedPtr<std::string> pContent);
     virtual ~RequestBodyForSharedPtrString();

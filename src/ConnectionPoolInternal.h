@@ -16,6 +16,7 @@
 #include "Poco/Util/TimerTask.h"
 
 #include "easyhttpcpp/ConnectionPool.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 
 #include "ConnectionInternal.h"
@@ -25,7 +26,7 @@
 
 namespace easyhttpcpp {
 
-class ConnectionPoolInternal : public ConnectionPool, public KeepAliveTimeoutListener {
+class EASYHTTPCPP_HTTP_INTERNAL_API ConnectionPoolInternal : public ConnectionPool, public KeepAliveTimeoutListener {
 public:
     typedef Poco::AutoPtr<ConnectionPoolInternal> Ptr;
 

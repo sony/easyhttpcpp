@@ -14,6 +14,7 @@
 #include "easyhttpcpp/ConnectionPool.h"
 #include "easyhttpcpp/CrlCheckPolicy.h"
 #include "easyhttpcpp/HttpCache.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Interceptor.h"
 #include "easyhttpcpp/Proxy.h"
 
@@ -21,7 +22,7 @@
 
 namespace easyhttpcpp {
 
-class EasyHttpContext : public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_INTERNAL_API EasyHttpContext : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<EasyHttpContext> Ptr;
     typedef std::list<Interceptor::Ptr> InterceptorList;

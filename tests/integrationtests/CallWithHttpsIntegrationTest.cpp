@@ -47,7 +47,13 @@ static const char* const DefaultResponseContentType = "text/plain";
 static const char* const DefaultResponseBody = "response data 1";
 
 static const char* const TestDataForValidCert = "/HttpIntegrationTest/02_https_localhost_cert/cert/";
+#ifdef _WIN32
+// use PKCS#12 format file in windows.
+static const char* const ServerCertFile = "server/server.pfx";
+#else
+// use PEM fomat file except for windows.
 static const char* const ServerCertFile = "server/server.pem";
+#endif // _WIN32
 static const char* const ValidRootCaDir = "client/rootCa/";
 static const char* const ValidRootCaFile = "client/localhost_rootCa.pem";
 static const char* const InvalidRootCaDir = "client/rootCa_invalid/";
@@ -212,6 +218,7 @@ class HttpsValidRootCaTest : public CallWithHttpsIntegrationTest,
 INSTANTIATE_TEST_CASE_P(CallWithHttpsIntegrationTest, HttpsValidRootCaTest,
         testing::ValuesIn(HttpsValidRootCaTestData));
 
+// Windows (FLUX) では RootCA ファイル、RootCA ディレクトリの設定をサポートしないためテストをスキップします。
 TEST_P(HttpsValidRootCaTest, execute_DoesNotOccurSslErrorAndReturnsResponse_WhenCombinationOfMethodAndRootCa)
 {
     HttpsRootCaTestParam& param = (HttpsRootCaTestParam&) GetParam();
@@ -221,7 +228,8 @@ TEST_P(HttpsValidRootCaTest, execute_DoesNotOccurSslErrorAndReturnsResponse_When
     std::string certRootParentDir = HttpTestUtil::getDefaultCertRootParentDir();
     Poco::File file(certRootParentDir);
     file.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForValidCert);
+    Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+            EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForValidCert));
     srcTestData.copyTo(certRootParentDir);
 
     // set test handler
@@ -295,10 +303,9 @@ TEST_P(HttpsValidRootCaTest, execute_DoesNotOccurSslErrorAndReturnsResponse_When
 
     // check database
     if (param.httpMethod == Request::HttpMethodGet) {
-        HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-        HttpCacheDatabase::HttpCacheMetadataAll metadata;
+        HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        EXPECT_TRUE(db.getMetadataAll(key, metadata));
+        EXPECT_FALSE(db.getMetadataAll(key).isNull());
     }
 }
 
@@ -582,6 +589,7 @@ class HttpsInvalidRootCaTest : public CallWithHttpsIntegrationTest,
 INSTANTIATE_TEST_CASE_P(CallWithHttpsIntegrationTest, HttpsInvalidRootCaTest,
         testing::ValuesIn(HttpsInvalidRootCaTestData));
 
+// Windows (FLUX) では RootCA ファイル、RootCA ディレクトリの設定をサポートしないためテストをスキップします。
 TEST_P(HttpsInvalidRootCaTest, execute_ThrowsException_WhenCombinationMethodAndRootCaInvalidCondition)
 {
     HttpsInvalidRootCaTestParam& param = (HttpsInvalidRootCaTestParam&) GetParam();
@@ -591,7 +599,8 @@ TEST_P(HttpsInvalidRootCaTest, execute_ThrowsException_WhenCombinationMethodAndR
     std::string certRootParentDir = HttpTestUtil::getDefaultCertRootParentDir();
     Poco::File file(certRootParentDir);
     file.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForValidCert);
+    Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+            EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForValidCert));
     srcTestData.copyTo(certRootParentDir);
 
     // set test handler
@@ -664,13 +673,14 @@ TEST_P(HttpsInvalidRootCaTest, execute_ThrowsException_WhenCombinationMethodAndR
     }
 }
 
-TEST_F(CallWithHttpsIntegrationTest, execute_ThrowsHttpSslException_WhenServerCrlIsExpired)
+TEST_F(CallWithHttpsIntegrationTest, execute_ThrowsHttpSslException_WhenServerCertificateHasExpired)
 {
     // load test data
     std::string certRootParentDir = HttpTestUtil::getDefaultCertRootParentDir();
     Poco::File file(certRootParentDir);
     file.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForExpiredCert);
+    Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+            EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForExpiredCert));
     srcTestData.copyTo(certRootParentDir);
 
     // set test handler

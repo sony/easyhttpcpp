@@ -204,6 +204,9 @@ public:
          * @brief Set Root CA directory.
          * 
          * if root CA directory and file is no set, use OpenSSL default root CA.
+         * This api is not supported on Windows. Even if set, it will be ignored
+         * and the default certificate store will be used.
+         *
          * @param rootCaDirectory root CA directory
          * @return Builder
          * @exception HttpIllegalArgumentException
@@ -220,6 +223,9 @@ public:
          * @brief Set Root CA file.
          * 
          * if root CA directory and file is no set, use OpenSSL default root CA.
+         * This api is not supported on Windows. Even if set, it will be ignored
+         * and the default certificate store will be used.
+         *
          * @param rootCaFile root CA file
          * @return Builder
          * @exception HttpIllegalArgumentException

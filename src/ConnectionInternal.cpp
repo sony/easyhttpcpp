@@ -154,9 +154,18 @@ bool ConnectionInternal::cancel()
     m_cancelled = true;
     EASYHTTPCPP_LOG_D(Tag, "cancel: cancelled");
     if (m_pPocoHttpClientSession) {
-        EASYHTTPCPP_LOG_D(Tag, "cancel: call HTTPClientSession::socket::shutdown.");
         try {
+#ifdef WIN32
+            // Windows can not close socket with shutdown; We also need to call socket::close, so we call
+            // HttpClientSession::abort.
+            EASYHTTPCPP_LOG_D(Tag, "cancel: call HTTPClientSession::abort.");
+            m_pPocoHttpClientSession->abort();
+#else
+            // Since communication can be interrupted by calling Socket::shutdown, no need to call
+            // Socket::close on Linux.
+            EASYHTTPCPP_LOG_D(Tag, "cancel: call HTTPClientSession::socket::shutdown.");
             m_pPocoHttpClientSession->socket().shutdown();
+#endif
         } catch (const Poco::Exception& e) {
             EASYHTTPCPP_LOG_D(Tag, "cancel: HTTPClientSession::abort throws PocoException [%s]", e.message().c_str());
             ret = false;

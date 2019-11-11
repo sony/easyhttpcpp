@@ -14,7 +14,9 @@ namespace common {
 namespace test {
 namespace {
 const Poco::Path TestRootPath(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT), "FileUtilMultiThreadUnitTest");
-const Poco::Path TestTargetDir(TestRootPath, "a/b/c/d/e/f");
+// Windowsでは260byteの制限を解除する為に,ファイル名にディレクトリセパレータを含むパスを扱う場合は,
+// Path(const Path & parent, const Path & relative); のinterfaceを使う必要があります.
+const Poco::Path TestTargetDir(TestRootPath, Poco::Path("a/b/c/d/e/f"));
 
 class DirsCreateRunner : public Poco::Runnable {
 public:
@@ -59,7 +61,7 @@ TEST_F(FileUtilMultiThreadUnitTest, createDirsIfAbsent_Succeeds_WhenCalledOnMult
     for (int runnerCount = 0; runnerCount < threadTotal; ++runnerCount) {
         EXPECT_TRUE(runners[runnerCount].m_success) << "runner index: " << runnerCount;
     }
-    EXPECT_TRUE(Poco::File(TestTargetDir).exists());
+    EXPECT_TRUE(Poco::File(TestTargetDir.absolute()).exists());
 }
 
 } /* namespace test */

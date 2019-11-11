@@ -10,6 +10,7 @@
 #include "Poco/RefCountedObject.h"
 
 #include "easyhttpcpp/Call.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
 
@@ -18,7 +19,7 @@
 
 namespace easyhttpcpp {
 
-class CallInternal : public Call {
+class EASYHTTPCPP_HTTP_INTERNAL_API CallInternal : public Call {
 public:
 
     CallInternal(EasyHttpContext::Ptr pContext, Request::Ptr pRequest);

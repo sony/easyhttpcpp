@@ -71,11 +71,6 @@ public:
         // initialize test preferences with QA profile
         TestPreferences::getInstance().initialize(TestPreferences::ProfileQA);
     }
-
-    static void TearDownTestCase()
-    {
-        std::cout << "fin" << std::endl;
-    }
 };
 
 namespace {

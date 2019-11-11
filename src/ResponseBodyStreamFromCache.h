@@ -6,13 +6,14 @@
 #define EASYHTTPCPP_RESPONSEBODYSTREAMFROMCACHE_H_INCLUDED
 
 #include "easyhttpcpp/HttpCache.h"
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Response.h"
 
 #include "ResponseBodyStreamInternal.h"
 
 namespace easyhttpcpp {
 
-class ResponseBodyStreamFromCache : public ResponseBodyStreamInternal {
+class EASYHTTPCPP_HTTP_INTERNAL_API ResponseBodyStreamFromCache : public ResponseBodyStreamInternal {
 public:
     ResponseBodyStreamFromCache(std::istream* pContent, Response::Ptr pResponse, HttpCache::Ptr pHttpCache);
     virtual ~ResponseBodyStreamFromCache();

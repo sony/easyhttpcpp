@@ -9,10 +9,12 @@
 #include <vector>
 
 #include "Poco/AutoPtr.h"
+#include "Poco/Exception.h"
 #include "Poco/RefCountedObject.h"
 
 #include "easyhttpcpp/db/DbExports.h"
 #include "easyhttpcpp/db/SqliteCursor.h"
+#include "easyhttpcpp/db/SqliteDatabaseCorruptionListener.h"
 
 namespace easyhttpcpp {
 namespace db {
@@ -32,6 +34,8 @@ public:
         // 2 means enable incremental vacuum
         AutoVacuumIncremental
     };
+
+    SqliteDatabase(const std::string& path);
 
     virtual ~SqliteDatabase();
 
@@ -78,14 +82,18 @@ public:
 
     virtual void reopen();
 
+    virtual void setDatabaseCorruptionListener(SqliteDatabaseCorruptionListener::Ptr pListener);
+
 private:
     Poco::SharedPtr<Poco::Data::Session> m_pSession;
     Poco::FastMutex m_mutex;
+    SqliteDatabaseCorruptionListener::Ptr m_pDatabaseCorruptionListener;
+    std::string m_path;
 
     bool m_opened;
 
-    SqliteDatabase(const std::string& path);
     void throwExceptionIfIllegalState();
+    void checkForDatabaseCorruption(const std::string& funcName, const Poco::Exception& exception);
 };
 
 } /* namespace db */

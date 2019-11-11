@@ -660,6 +660,10 @@ TEST(ConnectionPoolInternalUnitTest, releaseConnection_RemovesOldestIdleConnecti
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal1));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal1->getStatus());
 
+    // Windows は時間取得の精度が低く、Timestamp で取得できる時間が 約15ms（クロック割り込み間隔に依存）なので、
+    // 次の Connection update まで 20ms 待ちます.
+    Poco::Thread::sleep(20);
+
     std::string url2 = "http://host02/path1";
     Request::Builder requestBuilder2;
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url2).build();
@@ -668,6 +672,8 @@ TEST(ConnectionPoolInternalUnitTest, releaseConnection_RemovesOldestIdleConnecti
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal2));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal2->getStatus());
 
+    Poco::Thread::sleep(20);
+
     std::string url3 = "http://host03/path1";
     Request::Builder requestBuilder3;
     Request::Ptr pRequest3 = requestBuilder3.setUrl(url3).build();
@@ -675,6 +681,8 @@ TEST(ConnectionPoolInternalUnitTest, releaseConnection_RemovesOldestIdleConnecti
             pEasyHttpContext);
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal3));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal3->getStatus());
+
+    Poco::Thread::sleep(20);
 
     std::string url4 = "http://host04/path1";
     Request::Builder requestBuilder4;
@@ -724,6 +732,10 @@ TEST(ConnectionPoolInternalUnitTest,
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal1));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal1->getStatus());
 
+    // Windows は時間取得の精度が低く、Timestamp で取得できる時間が 約15ms（クロック割り込み間隔に依存）なので、
+    // 次の Connection update まで 20ms 待ちます.
+    Poco::Thread::sleep(20);
+
     std::string url2 = "http://host02/path1";
     Request::Builder requestBuilder2;
     Request::Ptr pRequest2 = requestBuilder2.setUrl(url2).build();
@@ -731,6 +743,8 @@ TEST(ConnectionPoolInternalUnitTest,
             pEasyHttpContext);
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal2));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal2->getStatus());
+
+    Poco::Thread::sleep(20);
 
     std::string url3 = "http://host03/path1";
     Request::Builder requestBuilder3;
@@ -740,12 +754,16 @@ TEST(ConnectionPoolInternalUnitTest,
     ASSERT_TRUE(pConnectionPoolInternal->releaseConnection(pConnectionInternal3));
     ASSERT_EQ(ConnectionInternal::Idle, pConnectionInternal3->getStatus());
 
+    Poco::Thread::sleep(20);
+
     std::string url4 = "http://host04/path1";
     Request::Builder requestBuilder4;
     Request::Ptr pRequest4 = requestBuilder4.setUrl(url4).build();
     ConnectionInternal::Ptr pConnectionInternal4 = pConnectionPoolInternal->createConnection(pRequest4,
             pEasyHttpContext);
     ASSERT_EQ(ConnectionInternal::Inuse, pConnectionInternal4->getStatus());
+
+    Poco::Thread::sleep(20);
 
     // 一番古い Idle Connection を再利用して再度 Idle にする。
     bool connectionReused = false;
@@ -758,6 +776,8 @@ TEST(ConnectionPoolInternalUnitTest,
     ASSERT_EQ(keepAliveIdleCountMax, pConnectionPoolInternal->getKeepAliveIdleCountMax());
     ASSERT_EQ(4, pConnectionPoolInternal->getTotalConnectionCount());
     ASSERT_EQ(3, pConnectionPoolInternal->getKeepAliveIdleConnectionCount());
+
+    Poco::Thread::sleep(20);
 
     // When: call releaseConnection
     // Then: return true. ２番目に古い Idle Connection が remove される。
@@ -801,17 +821,17 @@ TEST(ConnectionPoolInternalUnitTest, releaseConnection_ReturnsTrueAndStartsKeepA
     // Then: expirationTime は、startTime + keepAliveTimeoutSec とほぼ同じ。
     //       expirationTime で、keepAliveTimeoutTask::run が呼び出される。
 
-    // 誤差 500ms まで OK とします。
-    Poco::Timestamp minExpectedExpirationTime = startTime + (keepAliveTimeoutSec * 1000000 - 500 * 1000);
-    Poco::Timestamp maxExpectedExpirationTime = startTime + (keepAliveTimeoutSec * 1000000 + 500 * 1000);
+    // Windows では Poco::Util::Timer でのタイマーの精度が低い為、1500millisec のマージンを取ります.
+    Poco::Timestamp minExpectedExpirationTime = startTime + (keepAliveTimeoutSec * 1000000 - 1500 * 1000);
+    Poco::Timestamp maxExpectedExpirationTime = startTime + (keepAliveTimeoutSec * 1000000 + 1500 * 1000);
 
     // expirationTime
     Poco::Timestamp expirationTime = pKeepAliveTimeoutTask->getKeepAliveTimeoutExpirationTime();
     EXPECT_LE(startTime + keepAliveTimeoutSec, expirationTime); // startTime + keepAliveTimeoutSec より必ず大きい。
     EXPECT_GE(maxExpectedExpirationTime, expirationTime);
 
-    // keepAliveTimeoutSec + 500ms 待つ。
-    Poco::Thread::sleep(keepAliveTimeoutSec * 1000 + 500); // milli sec. margin 500ms
+    // Windows では sleep をタイマ割り込みで制御しており、精度が保証されないので 5sec 待ちます.
+    Poco::Thread::sleep(5 * 1000); // wait 5sec
 
     // keepAliveTimeoutCheckTask::run が呼び出される。
     Poco::Timestamp expiredTime = pKeepAliveTimeoutTask->lastExecution();

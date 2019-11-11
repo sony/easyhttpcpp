@@ -346,10 +346,11 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // GET same url. without network access
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -379,19 +380,20 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     Poco::Timestamp endTime2;
 
     // database is same as 1st request (except lastAccessedAtEpoch)
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(metadata1.getKey(), metadata2.getKey());
-    EXPECT_EQ(metadata1.getUrl(), metadata2.getUrl());
-    EXPECT_EQ(metadata1.getHttpMethod(), metadata2.getHttpMethod());
-    EXPECT_EQ(metadata1.getStatusCode(), metadata2.getStatusCode());
-    EXPECT_EQ(metadata1.getStatusMessage(), metadata2.getStatusMessage());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testutil::equalHeaders(metadata1.getResponseHeaders()));
-    EXPECT_EQ(metadata1.getResponseBodySize(), metadata2.getResponseBodySize());
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(pMetadata1->getKey(), pMetadata2->getKey());
+    EXPECT_EQ(pMetadata1->getUrl(), pMetadata2->getUrl());
+    EXPECT_EQ(pMetadata1->getHttpMethod(), pMetadata2->getHttpMethod());
+    EXPECT_EQ(pMetadata1->getStatusCode(), pMetadata2->getStatusCode());
+    EXPECT_EQ(pMetadata1->getStatusMessage(), pMetadata2->getStatusMessage());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(), testutil::equalHeaders(pMetadata1->getResponseHeaders()));
+    EXPECT_EQ(pMetadata1->getResponseBodySize(), pMetadata2->getResponseBodySize());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
             endTime2.epochTime()));
 }
 
@@ -424,10 +426,11 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // GET same url. without network access
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -457,12 +460,13 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     Poco::Timestamp endTime2;
 
     // database is same as 1st request (except lastAccessedAtEpoch)
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime()
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime()
            , endTime2.epochTime()));
 }
 
@@ -495,10 +499,11 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // GET same url. without network access
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -528,12 +533,13 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     Poco::Timestamp endTime2;
 
     // check database
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
             endTime2.epochTime()));
 }
 
@@ -566,10 +572,11 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // GET same url. without network access
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -599,13 +606,14 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     Poco::Timestamp endTime2;
 
     // database is same as 1st request (except lastAccessedAtEpoch)
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(metadata1.getStatusCode(), metadata2.getStatusCode());
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(pMetadata1->getStatusCode(), pMetadata2->getStatusCode());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
             endTime2.epochTime()));
 }
 
@@ -692,10 +700,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -748,10 +755,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     DelegateIfModifiedSinceInterceptor delegateInterceptor;
@@ -808,10 +814,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     DelegateIfModifiedSinceInterceptor delegateInterceptor;
@@ -868,10 +873,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -924,10 +928,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -980,10 +983,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url. with conditional request.
     DelegateIfModifiedSinceInterceptor delegateInterceptor;
@@ -1040,10 +1042,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url and network access
     DefferentResponseRequestHandler handlerDefferent;
@@ -1101,10 +1102,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url and network access
     DefferentResponseRequestHandler handlerDefferent;
@@ -1161,10 +1161,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url and force cache but need network request.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -1219,10 +1218,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // get database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // GET same url with forceCache
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -1282,10 +1280,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check cache
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // 2nd request is same url and GET Method from cached response.
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -1321,8 +1318,7 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody3 = pResponse3->getBody()->toString();
 
     // check cache
-    HttpCacheDatabase::HttpCacheMetadataAll metadata3;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata3));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // 4th request is GET method and same url.
     Interceptor::Ptr pMockNetworkInterceptor4 = new MockInterceptor();
@@ -1374,10 +1370,11 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata1;
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    pMetadata1 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata1.isNull());
 
     // GET same url. without network access
     Interceptor::Ptr pMockNetworkInterceptor = new MockInterceptor();
@@ -1410,19 +1407,20 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     Poco::Timestamp endTime2;
 
     // database is same as 1st request (except lastAccessedAtEpoch)
-    HttpCacheDatabase::HttpCacheMetadataAll metadata2;
-    EXPECT_TRUE(db.getMetadataAll(key, metadata2));
-    EXPECT_EQ(metadata1.getKey(), metadata2.getKey());
-    EXPECT_EQ(metadata1.getUrl(), metadata2.getUrl());
-    EXPECT_EQ(metadata1.getHttpMethod(), metadata2.getHttpMethod());
-    EXPECT_EQ(metadata1.getStatusCode(), metadata2.getStatusCode());
-    EXPECT_EQ(metadata1.getStatusMessage(), metadata2.getStatusMessage());
-    EXPECT_THAT(metadata2.getResponseHeaders(), testutil::equalHeaders(metadata1.getResponseHeaders()));
-    EXPECT_EQ(metadata1.getResponseBodySize(), metadata2.getResponseBodySize());
-    EXPECT_EQ(metadata1.getSentRequestAtEpoch(), metadata2.getSentRequestAtEpoch());
-    EXPECT_EQ(metadata1.getReceivedResponseAtEpoch(), metadata2.getReceivedResponseAtEpoch());
-    EXPECT_EQ(metadata1.getCreatedAtEpoch(), metadata2.getCreatedAtEpoch());
-    EXPECT_THAT(metadata2.getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata2;
+    pMetadata2 = db.getMetadataAll(key);
+    ASSERT_FALSE(pMetadata2.isNull());
+    EXPECT_EQ(pMetadata1->getKey(), pMetadata2->getKey());
+    EXPECT_EQ(pMetadata1->getUrl(), pMetadata2->getUrl());
+    EXPECT_EQ(pMetadata1->getHttpMethod(), pMetadata2->getHttpMethod());
+    EXPECT_EQ(pMetadata1->getStatusCode(), pMetadata2->getStatusCode());
+    EXPECT_EQ(pMetadata1->getStatusMessage(), pMetadata2->getStatusMessage());
+    EXPECT_THAT(pMetadata2->getResponseHeaders(), testutil::equalHeaders(pMetadata1->getResponseHeaders()));
+    EXPECT_EQ(pMetadata1->getResponseBodySize(), pMetadata2->getResponseBodySize());
+    EXPECT_EQ(pMetadata1->getSentRequestAtEpoch(), pMetadata2->getSentRequestAtEpoch());
+    EXPECT_EQ(pMetadata1->getReceivedResponseAtEpoch(), pMetadata2->getReceivedResponseAtEpoch());
+    EXPECT_EQ(pMetadata1->getCreatedAtEpoch(), pMetadata2->getCreatedAtEpoch());
+    EXPECT_THAT(pMetadata2->getLastAccessedAtEpoch(), testutil::isTimeInRange(startTime2.epochTime(),
             endTime2.epochTime()));
 }
 
@@ -1455,10 +1453,9 @@ TEST_F(CallWithCacheBeforeSendRequestIntegrationTest,
     std::string responseBody1 = pResponse1->getBody()->toString();
 
     // check database
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata1;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-    EXPECT_TRUE(db.getMetadataAll(key, metadata1));
+    EXPECT_FALSE(db.getMetadataAll(key).isNull());
 
     // cache file を削除する。
     Poco::File cacheFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet, url));

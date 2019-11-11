@@ -21,11 +21,15 @@ before_install:
   - if [ $TRAVIS_OS_NAME = linux ]; then chmod +x cmake-3.7.2-Linux-x86_64.sh; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then ./cmake-3.7.2-Linux-x86_64.sh --prefix=$HOME/usr --exclude-subdir --skip-license; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then cmake --version; fi
-install:
-  # ccache on OS X needs installation first
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install ccache; export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
-  # reset ccache statistics
-  - ccache --zero-stats
+  # Install ccache on osx
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ccache; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
+  - ccache -V && ccache --show-stats && ccache --zero-stats
+# install:
+#   # ccache on OS X needs installation first
+#   - if [ $TRAVIS_OS_NAME = osx ]; then brew install ccache; export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
+#   # reset ccache statistics
+#   - ccache --zero-stats
 script:
 - set -e
 - ./scripts/01_install_dependencies.sh

@@ -145,7 +145,6 @@ bool ResponseBodyStreamInternal::skipAll(PocoHttpClientSessionPtr pPocoHttpClien
     try {
         originalTimeout = socket.getReceiveTimeout();
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_W(Tag, "skipAll: Could not get socket receive timeout.");
         EASYHTTPCPP_LOG_D(Tag, "skipAll: Could not get socket receive timeout. Details: %s", e.message().c_str());
         return false;
     }
@@ -166,7 +165,6 @@ bool ResponseBodyStreamInternal::skipAll(PocoHttpClientSessionPtr pPocoHttpClien
             try {
                 socket.setReceiveTimeout(timeout);
             } catch (const Poco::Exception& e) {
-                EASYHTTPCPP_LOG_W(Tag, "skipAll: Could not set socket receive timeout for skip.");
                 EASYHTTPCPP_LOG_D(Tag, "skipAll: Could not set socket receive timeout for skip. Details: %s",
                         e.message().c_str());
                 ret = false;
@@ -179,7 +177,6 @@ bool ResponseBodyStreamInternal::skipAll(PocoHttpClientSessionPtr pPocoHttpClien
         }
         EASYHTTPCPP_LOG_D(Tag, "skipAll: ResponseBody skip bytes:%zd", skipBytes);
     } catch (const HttpException& e) {
-        EASYHTTPCPP_LOG_W(Tag, "SkipAll: Could not skip stream since read of response body failed.");
         EASYHTTPCPP_LOG_D(Tag, "SkipAll: Could not skip stream since read of response body failed. Details: %s",
                 e.getMessage().c_str());
         ret = false;
@@ -189,7 +186,6 @@ bool ResponseBodyStreamInternal::skipAll(PocoHttpClientSessionPtr pPocoHttpClien
     try {
         socket.setReceiveTimeout(originalTimeout);
     } catch (const Poco::Exception& e) {
-        EASYHTTPCPP_LOG_W(Tag, "skipAll: Could not reset socket receive timeout to original.");
         EASYHTTPCPP_LOG_D(Tag, "skipAll: Could not reset socket receive timeout to original. Details: %s",
                 e.message().c_str());
         ret = false;

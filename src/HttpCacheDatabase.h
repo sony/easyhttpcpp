@@ -13,47 +13,50 @@
 
 #include "easyhttpcpp/common/Cache.h"
 #include "easyhttpcpp/common/CacheMetadata.h"
-#include "easyhttpcpp/db/SqliteOpenHelper.h"
+#include "easyhttpcpp/HttpExports.h"
 
+#include "HttpCacheDatabaseOpenHelper.h"
 #include "HttpCacheMetadata.h"
 
 namespace easyhttpcpp {
 
 class HttpCacheEnumerationListener;
 
-class HttpCacheDatabase : public easyhttpcpp::db::SqliteOpenHelper, public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheDatabase : public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<HttpCacheDatabase> Ptr;
 
-    HttpCacheDatabase(const Poco::Path& databaseFile);
+    HttpCacheDatabase(HttpCacheDatabaseOpenHelper::Ptr pOpenHelper);
     virtual ~HttpCacheDatabase();
 
-    void onCreate(easyhttpcpp::db::SqliteDatabase& db);
-    void onUpgrade(easyhttpcpp::db::SqliteDatabase& db, unsigned int oldVersion, unsigned int newVersion);
-
-    bool getMetadata(const std::string& key, HttpCacheMetadata*& pHttpCacheMetadata);
+    HttpCacheMetadata::Ptr getMetadata(const std::string& key);
     bool deleteMetadata(const std::string& key);
-    bool updateMetadata(const std::string& key, HttpCacheMetadata* pHttpCacheMetadata);
+    void updateMetadata(const std::string& key, HttpCacheMetadata::Ptr pHttpCacheMetadata);
     bool updateLastAccessedSec(const std::string& key);
-    bool enumerate(HttpCacheEnumerationListener* pListener);
+    bool deleteDatabaseFile();
+    void enumerate(HttpCacheEnumerationListener* pListener);
+    void closeSqliteSession();
 
     // for test method.
-    class HttpCacheMetadataAll : public HttpCacheMetadata {
+    class EASYHTTPCPP_HTTP_INTERNAL_API HttpCacheMetadataAll : public HttpCacheMetadata {
     public:
+        typedef Poco::AutoPtr<HttpCacheMetadataAll> Ptr;
+
+        HttpCacheMetadataAll();
         void setLastAccessedAtEpoch(std::time_t lastAccessedAtEpoch);
         std::time_t getLastAccessedAtEpoch() const;
     private:
         std::time_t m_lastAccessedAtEpoch;
     };
-    bool getMetadataAll(const std::string& key, HttpCacheMetadataAll& httpCacheMetadataAll);
-    bool updateMetadataAll(const std::string& key, HttpCacheMetadataAll& httpCacheMetadataAll);
-    bool deleteDatabaseFile();
+    HttpCacheMetadataAll::Ptr getMetadataAll(const std::string& key);
+    void updateMetadataAll(const std::string& key, HttpCacheMetadataAll::Ptr pHttpCacheMetadataAll);
 
 private:
     HttpCacheDatabase();
-    void dumpMetadata(HttpCacheMetadata* pHttpCacheMetadata);
+    void dumpMetadata(HttpCacheMetadata::Ptr pHttpCacheMetadata);
 
     Poco::FastMutex m_mutex;
+    HttpCacheDatabaseOpenHelper::Ptr m_pOpenHelper;
 };
 
 } /* namespace easyhttpcpp */

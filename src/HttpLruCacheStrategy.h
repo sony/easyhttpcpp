@@ -6,10 +6,11 @@
 #define EASYHTTPCPP_HTTPLRUCACHESTRATEGY_H_INCLUDED
 
 #include "easyhttpcpp/common/LruCacheByDataSizeStrategy.h"
+#include "easyhttpcpp/HttpExports.h"
 
 namespace easyhttpcpp {
 
-class HttpLruCacheStrategy : public easyhttpcpp::common::LruCacheByDataSizeStrategy {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpLruCacheStrategy : public easyhttpcpp::common::LruCacheByDataSizeStrategy {
 public:
     HttpLruCacheStrategy(size_t maxSize);
     virtual ~HttpLruCacheStrategy();

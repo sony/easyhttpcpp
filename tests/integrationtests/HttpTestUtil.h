@@ -13,6 +13,8 @@
 #include "easyhttpcpp/ResponseBodyStream.h"
 #include "HttpsTestServer.h"
 
+#include "HttpCacheMetadata.h"
+
 namespace easyhttpcpp {
 namespace test {
 
@@ -36,6 +38,13 @@ public:
     static void loadDefaultCertData();
     static void setupHttpsServerDefaultSetting(easyhttpcpp::testutil::HttpsTestServer& testServer);
     static std::string getDefaultRootCaDirectory();
+    static void makeCacheDatabaseCorrupted();
+    static void createInvalidCacheDatabase();
+    static HttpCacheMetadata::Ptr createHttpCacheMetadata(const std::string& key, const std::string& url,
+            size_t responseBodySize);
+    static std::string createResponseTempFile(const std::string& tmpFilename, const std::string& responseBody,
+            int no = 0);
+    static std::string createResponseTempFileBySize(const std::string& tmpFilename, size_t responseBodySize);
 
 private:
     HttpTestUtil();

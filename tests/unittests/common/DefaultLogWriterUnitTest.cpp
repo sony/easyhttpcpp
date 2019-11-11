@@ -33,13 +33,19 @@ namespace test {
 class DefaultLogWriterUnitTest : public testing::Test {
 protected:
     static const std::string PatternOfLogWriterName;
+    Poco::AutoPtr<DefaultLogWriter> m_pDefaultLogWriter;
 
+    virtual void SetUp()
+    {
+        m_pDefaultLogWriter = NULL;
+    }
     virtual void TearDown()
     {
-        // Poco::Logger cleanup
-        // Poco::Logger::shutdown()は、LoggerMapをclearする為、subclassのLoggerでresetToDefaultする必要がある
-        Poco::Logger::shutdown();
-        CoreLogger::getInstance()->resetToDefaults();
+        if (m_pDefaultLogWriter) {
+            // Poco::Logger cleanup
+            Poco::Logger::destroy(m_pDefaultLogWriter->getName());
+            m_pDefaultLogWriter = NULL;
+        }
     }
 };
 const std::string DefaultLogWriterUnitTest::PatternOfLogWriterName = "EASYHTTPCPPDefaultLogWriter_[0-9]+_[0-9]+";
@@ -53,10 +59,10 @@ TEST_F(DefaultLogWriterUnitTest, constructor_SetsValidSettings)
 {
     // Given: -
     // When: Create DefaultLogWriter.
-    DefaultLogWriter::Ptr pWriter = new DefaultLogWriter();
+    m_pDefaultLogWriter = new DefaultLogWriter();
 
     // Then: Check property of Poco::Logger.
-    Poco::Logger& logger = Poco::Logger::get(pWriter->getName());
+    Poco::Logger& logger = Poco::Logger::get(m_pDefaultLogWriter->getName());
     Poco::FormattingChannel* pFCchannel = static_cast<Poco::FormattingChannel*> (logger.getChannel());
 #ifndef _WIN32
     Poco::ColorConsoleChannel* pChannel = static_cast<Poco::ColorConsoleChannel*> (pFCchannel->getChannel());
@@ -88,7 +94,7 @@ TEST_F(DefaultLogWriterUnitTest, constructor_SetsValidSettings)
     EXPECT_STREQ("%L%Y/%m/%d %H:%M:%S [%P:%I] %t", format.c_str());
 
     Poco::RegularExpression re(PatternOfLogWriterName);
-    EXPECT_TRUE(re.match(pWriter->getName()));
+    EXPECT_TRUE(re.match(m_pDefaultLogWriter->getName()));
 }
 
 class LogTestParam {
@@ -124,21 +130,21 @@ INSTANTIATE_TEST_CASE_P(DefaultLogWriterUnitTest, LogParameterizedTest, ::testin
 TEST_P(LogParameterizedTest, log_CanBePassedParameterInPocoLogger_WhenLogLevelSpecified)
 {
     // Given: Set MockChannel to Poco::Logger of DefaultLogWriter.
-    DefaultLogWriter::Ptr pWriter = new DefaultLogWriter();
+    m_pDefaultLogWriter = new DefaultLogWriter();
 
-    Poco::Logger& logger = Poco::Logger::get(pWriter->getName());
+    Poco::Logger& logger = Poco::Logger::get(m_pDefaultLogWriter->getName());
     Poco::AutoPtr<MockPocoChannel> pMockPocoChannel = new MockPocoChannel;
     Poco::Message pocoMessage;
     EXPECT_CALL(*pMockPocoChannel, log(testing::_)).WillOnce(testing::SaveArg<0>(&pocoMessage));
     logger.setChannel(pMockPocoChannel);
 
     // When: Calls DefaultLogWriter#log()
-    pWriter->log(GetParam().m_tag, GetParam().m_logLevel, GetParam().m_line, GetParam().m_message);
+    m_pDefaultLogWriter->log(GetParam().m_tag, GetParam().m_logLevel, GetParam().m_line, GetParam().m_message);
 
     // Then: log method of Poco is to make sure it was called.
     std::string expectedPocoMessageText = EXPECT_MESSAGE_FORMAT(GetParam().m_tag.c_str(),
             GetParam().m_expectLogLevelChar, GetParam().m_line, GetParam().m_message.c_str());
-    EXPECT_STREQ(pWriter->getName().c_str(), pocoMessage.getSource().c_str());
+    EXPECT_STREQ(m_pDefaultLogWriter->getName().c_str(), pocoMessage.getSource().c_str());
     EXPECT_STREQ(expectedPocoMessageText.c_str(), pocoMessage.getText().c_str());
     EXPECT_EQ(GetParam().m_expectedPocoPriority, pocoMessage.getPriority());
 }
@@ -146,15 +152,15 @@ TEST_P(LogParameterizedTest, log_CanBePassedParameterInPocoLogger_WhenLogLevelSp
 TEST_F(DefaultLogWriterUnitTest, log_PocoLoggerIsNeverCalled_WhenLogLevelSilent)
 {
     // Given: Set MockChannel to Poco::Logger of DefaultLogWriter.
-    DefaultLogWriter::Ptr pWriter = new DefaultLogWriter();
+    m_pDefaultLogWriter = new DefaultLogWriter();
 
-    Poco::Logger& logger = Poco::Logger::get(pWriter->getName());
+    Poco::Logger& logger = Poco::Logger::get(m_pDefaultLogWriter->getName());
     Poco::AutoPtr<MockPocoChannel> pMockChannel = new MockPocoChannel;
     EXPECT_CALL(*pMockChannel, log(testing::_)).Times(0);
     logger.setChannel(pMockChannel);
 
     // When: Calls DefaultLogWriter#log()
-    pWriter->log("tag_dummy", LogLevelSilent, 1, "dummy Message");
+    m_pDefaultLogWriter->log("tag_dummy", LogLevelSilent, 1, "dummy Message");
 
     // Then: Never called Poco::Channell::log()
 }
@@ -162,7 +168,7 @@ TEST_F(DefaultLogWriterUnitTest, log_PocoLoggerIsNeverCalled_WhenLogLevelSilent)
 TEST_F(DefaultLogWriterUnitTest, messageSize_BoundaryCheck)
 {
     // Given: create log message
-    DefaultLogWriter::Ptr pWriter = new DefaultLogWriter();
+    m_pDefaultLogWriter = new DefaultLogWriter();
     std::string tag = "";
     std::string message = "";
 
@@ -184,7 +190,7 @@ TEST_F(DefaultLogWriterUnitTest, messageSize_BoundaryCheck)
     capture.startCapture();
 
     // When: マクロ実行
-    pWriter->log(tag, LogLevelError, UINT_MAX, message);
+    m_pDefaultLogWriter->log(tag, LogLevelError, UINT_MAX, message);
 
     // Then: 落ちないこと
     capture.endCapture();

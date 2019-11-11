@@ -9,6 +9,7 @@
 #include "Poco/FileStream.h"
 #include "Poco/Path.h"
 
+#include "easyhttpcpp/common/CommonMacros.h"
 #include "easyhttpcpp/common/FileUtil.h"
 #include "easyhttpcpp/db/SqlException.h"
 #include "easyhttpcpp/db/SqliteQueryBuilder.h"
@@ -27,9 +28,12 @@ namespace db {
 namespace test {
 
 namespace {
-const std::string DatabaseDirString = SqliteDatabaseIntegrationTestConstants::DatabaseDir;
+const std::string DatabaseDirString =
+        FileUtil::convertToAbsolutePathString(SqliteDatabaseIntegrationTestConstants::DatabaseDir);
 const std::string DatabaseFileName = SqliteDatabaseIntegrationTestConstants::DatabaseFileName;
 const std::string DatabaseTableName = SqliteDatabaseIntegrationTestConstants::DatabaseTableName;
+const Poco::Path SavedDatabaseFile(FileUtil::convertToAbsolutePathString(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)),
+        "saved_database.db");
 } /* namespace */
 
 class SqliteDatabaseCorruptionIntegrationTest : public testing::Test {
@@ -52,6 +56,8 @@ protected:
         Poco::Path databaseFilePath(DatabaseDirString, DatabaseFileName);
         Poco::File databaseFile(databaseFilePath.absolute().toString());
         FileUtil::removeFileIfPresent(databaseFile);
+
+        FileUtil::removeFileIfPresent(SavedDatabaseFile.absolute().toString());
     }
 
     void createInvalidDbFile() {
@@ -89,10 +95,75 @@ protected:
     }
 
     SqliteDatabaseTestUtil::Ptr m_pTestUtil;
+
+    class TestDatabaseCorruptionListener : public SqliteDatabaseCorruptionListener {
+    public:
+        typedef Poco::AutoPtr<TestDatabaseCorruptionListener> Ptr;
+
+        virtual void onDatabaseCorrupt(const std::string& databaseFile, SqlException::Ptr pWhat)
+        {
+            m_databaseFile = databaseFile;
+            m_pWhat = pWhat;
+            Poco::File originalDatabaseFile(databaseFile);
+            // save database file.
+            originalDatabaseFile.copyTo(SavedDatabaseFile.absolute().toString());
+        }
+
+        const std::string getDatabaseFile()
+        {
+            return m_databaseFile;
+        }
+
+        SqlException::Ptr getWhat()
+        {
+            return m_pWhat;
+        }
+
+        const std::string getSavedDatabaseFileName()
+        {
+            return SavedDatabaseFile.absolute().toString();
+        }
+
+    private:
+        std::string m_databaseFile;
+        SqlException::Ptr m_pWhat;
+    };
 };
 
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        getReadableDatabase_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsNotADbFile)
+        getReadableDatabase_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsNotADbFileAndSetDatabaseCorruptinListener)
+{
+    // Given: database file is a text file
+    createInvalidDbFile();
+
+    // setup SqliteOpenHelper
+    Poco::Path databasePath(DatabaseDirString, DatabaseFileName);
+    PartialMockSqliteOpenHelper sqliteOpenHelper(databasePath, 1);
+
+    EXPECT_CALL(sqliteOpenHelper, onConfigure(_)).Times(1);
+    EXPECT_CALL(sqliteOpenHelper, onCreate(_)).Times(0);
+    EXPECT_CALL(sqliteOpenHelper, onUpgrade(_, _, _)).Times(0);
+    EXPECT_CALL(sqliteOpenHelper, onDowngrade(_, _, _)).Times(0);
+    EXPECT_CALL(sqliteOpenHelper, onOpen(_)).Times(0);
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    sqliteOpenHelper.setDatabaseCorruptionListener(pListener);
+
+    // When: call getReadableDatabase
+    // Then: throws SqlDatabaseCorruptException
+    //       calls listener and saves database.
+    EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(sqliteOpenHelper.getReadableDatabase(), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
+}
+
+TEST_F(SqliteDatabaseCorruptionIntegrationTest,
+        getReadableDatabase_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsNotADbFileAndNotSetDatabaseCorruptinListener)
 {
     // Given: database file is a text file
     createInvalidDbFile();
@@ -108,12 +179,12 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     EXPECT_CALL(sqliteOpenHelper, onOpen(_)).Times(0);
 
     // When: call getReadableDatabase
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(sqliteOpenHelper.getReadableDatabase(), SqlDatabaseCorruptException, 100203);
 }
 
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        getWritableDatabase_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsNotADbFile)
+        getWritableDatabase_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsNotADbFile)
 {
     // Given: database file is a text file
     createInvalidDbFile();
@@ -128,27 +199,52 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     EXPECT_CALL(sqliteOpenHelper, onDowngrade(_, _, _)).Times(0);
     EXPECT_CALL(sqliteOpenHelper, onOpen(_)).Times(0);
 
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    sqliteOpenHelper.setDatabaseCorruptionListener(pListener);
+
     // When: call getReadableDatabase
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
+    //       calls listener and saves database.
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(sqliteOpenHelper.getWritableDatabase(), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        execSql_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        execSql_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
 
     // introduce corruption to database file
     makeDatabaseCorrupted();
+
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
 
     // When: execSql
-    // Then: throws SqlDatabaseCorruptionException
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+    // Then: throws SqlDatabaseCorruptException
+    //       calls listener and saves database.
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->execSql("PRAGMA user_version;"), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
-TEST_F(SqliteDatabaseCorruptionIntegrationTest, query_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
+TEST_F(SqliteDatabaseCorruptionIntegrationTest, query_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -156,20 +252,32 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest, query_ThrowsSqlDatabaseCorruptio
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
     // When: query
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     std::vector<std::string> columns;
     columns.push_back("Id");
     columns.push_back("Age");
     columns.push_back("Name");
     columns.push_back("Address");
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->query(DatabaseTableName, &columns, NULL, NULL, NULL, NULL, NULL, NULL, false),
             SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        rawQuery_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        rawQuery_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -177,8 +285,14 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
     // When: rawQuery
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     std::vector<std::string> columns;
     columns.push_back("Id");
     columns.push_back("Age");
@@ -187,11 +301,17 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     std::string queryString = SqliteQueryBuilder::buildQueryString(DatabaseTableName, &columns, NULL, NULL, NULL, NULL,
             NULL, false);
 
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->rawQuery(queryString, NULL), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
-TEST_F(SqliteDatabaseCorruptionIntegrationTest, insert_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
+TEST_F(SqliteDatabaseCorruptionIntegrationTest, insert_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -199,21 +319,33 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest, insert_ThrowsSqlDatabaseCorrupti
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
     // When: insert data
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     Poco::AutoPtr<ContentValues> pContentValues = new ContentValues();
     pContentValues->put("Name", "Homer Simpson");
     pContentValues->put("Address", "Springfield");
     pContentValues->put("Age", 38);
 
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     AutoSqliteTransaction autoTransaction(pDb);
 
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->insert(DatabaseTableName, *pContentValues), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        replace_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        replace_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -221,21 +353,33 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
     // When: replace data
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     Poco::AutoPtr<ContentValues> pContentValues = new ContentValues();
     pContentValues->put("Name", "Homer Simpson");
     pContentValues->put("Address", "Springfield");
     pContentValues->put("Age", 38);
 
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     AutoSqliteTransaction autoTransaction(pDb);
 
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->replace(DatabaseTableName, *pContentValues), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        deleteRows_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        deleteRows_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -243,17 +387,29 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
-    // When: delete data
-    // Then: throws SqlDatabaseCorruptionException
     SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
+    // When: delete data
+    // Then: throws SqlDatabaseCorruptException
     AutoSqliteTransaction autoTransaction(pDb);
     std::string whereClause = "Age = 10";
 
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->deleteRows(DatabaseTableName, &whereClause, NULL), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        update_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        update_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database with corruption
     createDefaultDatabaseTableWithoutData();
@@ -261,51 +417,85 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    pDb->setDatabaseCorruptionListener(pListener);
+
     // When: update data
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     Poco::AutoPtr<ContentValues> pContentValues = new ContentValues();
     pContentValues->put("Name", "Homer Simpson");
     pContentValues->put("Address", "Springfield");
     pContentValues->put("Age", 38);
 
-    SqliteDatabase::Ptr pDb = m_pTestUtil->getDatabase();
     std::string whereClause = "Age = 10";
     AutoSqliteTransaction autoTransaction(pDb);
 
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(pDb->update(DatabaseTableName, *(pContentValues.get()), &whereClause, NULL),
             SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        getVersion_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        getVersion_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database and begin a transaction
     createDefaultDatabaseTableWithoutData();
 
     // introduce corruption to database file
     makeDatabaseCorrupted();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    m_pTestUtil->getDatabase()->setDatabaseCorruptionListener(pListener);
 
     // When: getVersion
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(m_pTestUtil->getDatabase()->getVersion(), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        setVersion_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        setVersion_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database and begin a transaction
     createDefaultDatabaseTableWithoutData();
 
     // introduce corruption to database file
     makeDatabaseCorrupted();
+
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    m_pTestUtil->getDatabase()->setDatabaseCorruptionListener(pListener);
 
     // When: setVersion
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(m_pTestUtil->getDatabase()->setVersion(1), SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
+// Windows では SqliteDatabase open 中に database corruption にすることができないので )
 TEST_F(SqliteDatabaseCorruptionIntegrationTest,
-        setAutoVacuum_ThrowsSqlDatabaseCorruptionException_WhenDatabaseFileIsCorrupted)
+        setAutoVacuum_ThrowsSqlDatabaseCorruptException_WhenDatabaseFileIsCorrupted)
 {
     // Given: init database and begin a transaction
     createDefaultDatabaseTableWithoutData();
@@ -313,10 +503,20 @@ TEST_F(SqliteDatabaseCorruptionIntegrationTest,
     // introduce corruption to database file
     makeDatabaseCorrupted();
 
+    // setup listener
+    TestDatabaseCorruptionListener::Ptr pListener = new TestDatabaseCorruptionListener();
+    m_pTestUtil->getDatabase()->setDatabaseCorruptionListener(pListener);
+
     // When: setAutoVacuum
-    // Then: throws SqlDatabaseCorruptionException
+    // Then: throws SqlDatabaseCorruptException
     EASYHTTPCPP_ASSERT_THROW_WITH_CAUSE(m_pTestUtil->getDatabase()->setAutoVacuum(SqliteDatabase::AutoVacuumFull),
             SqlDatabaseCorruptException, 100203);
+
+    EASYHTTPCPP_IS_INSTANCE_OF(pListener->getWhat(), SqlDatabaseCorruptException);
+    Poco::File savedDatabaseFile(SavedDatabaseFile);
+    EXPECT_TRUE(savedDatabaseFile.exists());
+    Poco::File databaseFile(Poco::Path(DatabaseDirString, DatabaseFileName));
+    EXPECT_EQ(databaseFile.getSize(), savedDatabaseFile.getSize());
 }
 
 } /* namespace test */

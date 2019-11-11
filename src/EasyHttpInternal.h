@@ -9,12 +9,13 @@
 
 #include "easyhttpcpp/Call.h"
 #include "easyhttpcpp/EasyHttp.h"
+#include "easyhttpcpp/HttpExports.h"
 
 #include "EasyHttpContext.h"
 
 namespace easyhttpcpp {
 
-class EasyHttpInternal : public EasyHttp {
+class EASYHTTPCPP_HTTP_INTERNAL_API EasyHttpInternal : public EasyHttp {
 public:
     EasyHttpInternal(EasyHttp::Builder& builder);
     virtual ~EasyHttpInternal();

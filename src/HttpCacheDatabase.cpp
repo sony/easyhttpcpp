@@ -11,12 +11,12 @@
 #include "easyhttpcpp/db/AutoSqliteTransaction.h"
 #include "easyhttpcpp/db/ContentValues.h"
 #include "easyhttpcpp/db/SqlException.h"
-#include "easyhttpcpp/HttpConstants.h"
 #include "easyhttpcpp/HttpException.h"
 
 #include "HttpCacheDatabase.h"
 #include "HttpCacheMetadata.h"
 #include "HttpCacheEnumerationListener.h"
+#include "HttpInternalConstants.h"
 #include "HttpUtil.h"
 
 using easyhttpcpp::common::Cache;
@@ -34,21 +34,8 @@ using easyhttpcpp::db::SqliteOpenHelper;
 namespace easyhttpcpp {
 
 static const std::string Tag = "HttpCacheDatabase";
-static const std::string KeyId = "id";
-static const std::string KeyCacheKey = "cache_key";
-static const std::string KeyUrl = "url";
-static const std::string KeyMethod = "method";
-static const std::string KeyStatusCode = "status_code";
-static const std::string KeyStatusMessage = "status_message";
-static const std::string KeyResponseHeaderJson = "response_header_json";
-static const std::string KeyResponseBodySize = "response_body_size";
-static const std::string KeySentRequestAtEpoch = "sent_request_at_epoch";
-static const std::string KeyReceivedResponseAtEpoch = "received_response_at_epoch";
-static const std::string KeyCreatedAtEpoch = "created_at_epoch";
-static const std::string KeyLastAccessedAtEpoch = "last_accessed_at_epoch";
 
-HttpCacheDatabase::HttpCacheDatabase(const Poco::Path& databaseFile) :
-        SqliteOpenHelper(databaseFile, HttpConstants::Database::Version)
+HttpCacheDatabase::HttpCacheDatabase(HttpCacheDatabaseOpenHelper::Ptr pOpenHelper) : m_pOpenHelper(pOpenHelper)
 {
 }
 
@@ -56,65 +43,40 @@ HttpCacheDatabase::~HttpCacheDatabase()
 {
 }
 
-void HttpCacheDatabase::onCreate(SqliteDatabase& db)
-{
-    std::string sqlCmd = std::string("CREATE TABLE IF NOT EXISTS ") + HttpConstants::Database::TableName +
-            " (" + KeyId + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            KeyCacheKey + " TEXT UNIQUE, " +
-            KeyUrl + " TEXT, " +
-            KeyMethod + " INTEGER, " +
-            KeyStatusCode + " INTEGER, " +
-            KeyStatusMessage + " TEXT, " +
-            KeyResponseHeaderJson + " TEXT, " +
-            KeyResponseBodySize + " INTEGER, " +
-            KeySentRequestAtEpoch + " INTEGER, " +
-            KeyReceivedResponseAtEpoch + " INTEGER, " +
-            KeyCreatedAtEpoch + " INTEGER, " +
-            KeyLastAccessedAtEpoch + " INTEGER )";
-    db.execSql(sqlCmd);
-}
-
-void HttpCacheDatabase::onUpgrade(SqliteDatabase& db, unsigned int oldVersion,
-        unsigned int newVersion)
-{
-}
-
-bool HttpCacheDatabase::getMetadata(const std::string& key, HttpCacheMetadata*& pHttpCacheMetadata)
+HttpCacheMetadata::Ptr HttpCacheDatabase::getMetadata(const std::string& key)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
 
-    pHttpCacheMetadata = NULL;
-
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getReadableDatabase();
+        pDb = m_pOpenHelper->getReadableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "getMetadata() Unable to open database. Error: %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
     try {
         std::vector<std::string> columns;
-        columns.push_back(KeyUrl);
-        columns.push_back(KeyMethod);
-        columns.push_back(KeyStatusCode);
-        columns.push_back(KeyStatusMessage);
-        columns.push_back(KeyResponseHeaderJson);
-        columns.push_back(KeyResponseBodySize);
-        columns.push_back(KeySentRequestAtEpoch);
-        columns.push_back(KeyReceivedResponseAtEpoch);
-        columns.push_back(KeyCreatedAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::Url);
+        columns.push_back(HttpInternalConstants::Database::Key::Method);
+        columns.push_back(HttpInternalConstants::Database::Key::StatusCode);
+        columns.push_back(HttpInternalConstants::Database::Key::StatusMessage);
+        columns.push_back(HttpInternalConstants::Database::Key::ResponseHeaderJson);
+        columns.push_back(HttpInternalConstants::Database::Key::ResponseBodySize);
+        columns.push_back(HttpInternalConstants::Database::Key::SentRequestAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::ReceivedResponseAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::CreatedAtEpoch);
 
-        std::string whereClause = KeyCacheKey + "=?";
+        std::string whereClause = std::string(HttpInternalConstants::Database::Key::CacheKey) + "=?";
         std::vector<std::string> whereArgs;
         whereArgs.push_back(key);
 
-        SqliteCursor::Ptr pCursor = pDb->query(HttpConstants::Database::TableName, &columns, &whereClause, &whereArgs,
-                NULL, NULL, NULL, NULL);
+        SqliteCursor::Ptr pCursor = pDb->query(HttpInternalConstants::Database::TableName, &columns, &whereClause,
+                &whereArgs, NULL, NULL, NULL, NULL);
         AutoSqliteCursor autoSqliteCursor(pCursor);
         if (pCursor->moveToFirst()) {
-            pHttpCacheMetadata = new HttpCacheMetadata();
+            HttpCacheMetadata::Ptr pHttpCacheMetadata = new HttpCacheMetadata();
             pHttpCacheMetadata->setKey(key);
             pHttpCacheMetadata->setUrl(pCursor->getString(0));
             pHttpCacheMetadata->setHttpMethod(static_cast<Request::HttpMethod> (pCursor->getInt(1)));
@@ -129,15 +91,15 @@ bool HttpCacheDatabase::getMetadata(const std::string& key, HttpCacheMetadata*& 
             // dump
             EASYHTTPCPP_LOG_D(Tag, "getMetadata");
             dumpMetadata(pHttpCacheMetadata);
+            return pHttpCacheMetadata;
         } else {
             EASYHTTPCPP_LOG_D(Tag, "getMetadata(): can not get row");
-            return false;
+            return NULL;
         }
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while getMetadata(): %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
-    return true;
 }
 
 bool HttpCacheDatabase::deleteMetadata(const std::string& key)
@@ -146,74 +108,72 @@ bool HttpCacheDatabase::deleteMetadata(const std::string& key)
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getWritableDatabase();
+        pDb = m_pOpenHelper->getWritableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "deleteMetadata() Unable to open database. Error: %s", e.getMessage().c_str());
-
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
-    bool deleted = false;
     try {
         AutoSqliteTransaction autoSqliteTransaction(pDb);
 
-        std::string whereClause = KeyCacheKey + "=?";
+        std::string whereClause = std::string(HttpInternalConstants::Database::Key::CacheKey) + "=?";
         std::vector<std::string> whereArgs;
         whereArgs.push_back(key);
 
-        deleted = pDb->deleteRows(HttpConstants::Database::TableName, &whereClause, &whereArgs) > 0;
+        bool deleted = pDb->deleteRows(HttpInternalConstants::Database::TableName, &whereClause, &whereArgs) > 0;
 
         pDb->setTransactionSuccessful();
+
+        return deleted;
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while deleteMetadata(): %s", e.getMessage().c_str());
         // do not set the transaction as successful; database will rollback automatically
-        deleted = false;
+        throw;
     }
-
-    return deleted;
 }
 
-bool HttpCacheDatabase::updateMetadata(const std::string& key, HttpCacheMetadata* pHttpCacheMetadata)
+void HttpCacheDatabase::updateMetadata(const std::string& key, HttpCacheMetadata::Ptr pHttpCacheMetadata)
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getWritableDatabase();
+        pDb = m_pOpenHelper->getWritableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "updateMetadata() Unable to open database. Error: %s", e.getMessage().c_str());
-
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
-    bool updated = false;
     try {
         // always use transactions for speedy and reliable updates
         AutoSqliteTransaction autoSqliteTransaction(pDb);
 
         ContentValues values;
-        values.put(KeyCacheKey, pHttpCacheMetadata->getKey());
-        values.put(KeyUrl, pHttpCacheMetadata->getUrl());
-        values.put(KeyMethod, pHttpCacheMetadata->getHttpMethod());
-        values.put(KeyStatusCode, pHttpCacheMetadata->getStatusCode());
-        values.put(KeyStatusMessage, pHttpCacheMetadata->getStatusMessage());
-        values.put(KeyResponseHeaderJson, HttpUtil::exchangeHeadersToJsonStr(pHttpCacheMetadata->getResponseHeaders()));
-        values.put(KeyResponseBodySize, pHttpCacheMetadata->getResponseBodySize());
-        values.put(KeySentRequestAtEpoch, pHttpCacheMetadata->getSentRequestAtEpoch());
-        values.put(KeyReceivedResponseAtEpoch, pHttpCacheMetadata->getReceivedResponseAtEpoch());
-        values.put(KeyCreatedAtEpoch, pHttpCacheMetadata->getCreatedAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::CacheKey, pHttpCacheMetadata->getKey());
+        values.put(HttpInternalConstants::Database::Key::Url, pHttpCacheMetadata->getUrl());
+        values.put(HttpInternalConstants::Database::Key::Method, pHttpCacheMetadata->getHttpMethod());
+        values.put(HttpInternalConstants::Database::Key::StatusCode, pHttpCacheMetadata->getStatusCode());
+        values.put(HttpInternalConstants::Database::Key::StatusMessage, pHttpCacheMetadata->getStatusMessage());
+        values.put(HttpInternalConstants::Database::Key::ResponseHeaderJson,
+                HttpUtil::exchangeHeadersToJsonStr(pHttpCacheMetadata->getResponseHeaders()));
+        values.put(HttpInternalConstants::Database::Key::ResponseBodySize, pHttpCacheMetadata->getResponseBodySize());
+        values.put(HttpInternalConstants::Database::Key::SentRequestAtEpoch,
+                pHttpCacheMetadata->getSentRequestAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::ReceivedResponseAtEpoch,
+                pHttpCacheMetadata->getReceivedResponseAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::CreatedAtEpoch, pHttpCacheMetadata->getCreatedAtEpoch());
         Poco::Timestamp now;
-        values.put(KeyLastAccessedAtEpoch, now.epochTime());
+        values.put(HttpInternalConstants::Database::Key::LastAccessedAtEpoch, now.epochTime());
 
         // do an INSERT, and if that INSERT fails because of a conflict,
         // delete the conflicting rows before INSERTing again
-        pDb->replace(HttpConstants::Database::TableName, values);
+        pDb->replace(HttpInternalConstants::Database::TableName, values);
         EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadata.");
 
         pDb->setTransactionSuccessful();
-        updated = true;
 
         // dump
         EASYHTTPCPP_LOG_D(Tag, "updateMetadata");
@@ -223,10 +183,8 @@ bool HttpCacheDatabase::updateMetadata(const std::string& key, HttpCacheMetadata
 
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while updateMetadata(): %s", e.getMessage().c_str());
-        updated = false;
+        throw;
     }
-
-    return updated;
 }
 
 bool HttpCacheDatabase::updateLastAccessedSec(const std::string& key)
@@ -235,57 +193,61 @@ bool HttpCacheDatabase::updateLastAccessedSec(const std::string& key)
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getWritableDatabase();
+        pDb = m_pOpenHelper->getWritableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "updateMetadata() Unable to open database. Error: %s", e.getMessage().c_str());
-
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
-    bool updated = false;
     try {
         // always use transactions for speedy and reliable updates
         AutoSqliteTransaction autoSqliteTransaction(pDb);
 
         ContentValues values;
         Poco::Timestamp now;
-        values.put(KeyLastAccessedAtEpoch, now.epochTime());
+        values.put(HttpInternalConstants::Database::Key::LastAccessedAtEpoch, now.epochTime());
 
         EASYHTTPCPP_LOG_D(Tag, "updateLastAccessedSec: lastAccessedAtEpoch = %s", Poco::DateTimeFormatter::format(now,
                 Poco::DateTimeFormat::HTTP_FORMAT).c_str());
 
-        std::string whereClause = KeyCacheKey + "=?";
+        std::string whereClause = std::string(HttpInternalConstants::Database::Key::CacheKey) + "=?";
         std::vector<std::string> whereArgs;
         whereArgs.push_back(key);
 
-        updated = pDb->update(HttpConstants::Database::TableName, values, &whereClause, &whereArgs) > 0;
+        bool update;
+        if (pDb->update(HttpInternalConstants::Database::TableName, values, &whereClause, &whereArgs) == 0) {
+            // cannot update lastAccessedSec in cache, but ignore it.
+            EASYHTTPCPP_LOG_D(Tag, "updateLastAccessedSec : can not update database.");
+            update = false;
+        } else {
+            update = true;
+        }
         pDb->setTransactionSuccessful();
+        return update;
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while updateLastAccessedSec(): %s", e.getMessage().c_str());
-        updated = false;
+        throw;
     }
-
-    return updated;
 }
 
 bool HttpCacheDatabase::deleteDatabaseFile()
 {
     Poco::FastMutex::ScopedLock lock(m_mutex);
-    return FileUtil::removeFileIfPresent(Poco::File(getDatabasePath().absolute().toString()));
+    return FileUtil::removeFileIfPresent(Poco::File(m_pOpenHelper->getDatabasePath().absolute().toString()));
 }
 
-bool HttpCacheDatabase::enumerate(HttpCacheEnumerationListener* pListener)
+void HttpCacheDatabase::enumerate(HttpCacheEnumerationListener* pListener)
 {
     // do not lock in enumerate because deleteMetadata might be called from onEnumerate callback.
     // when call enumerate, exclusive control is done by the caller.
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getReadableDatabase();
+        pDb = m_pOpenHelper->getReadableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "enumerate() Unable to open database. Error: %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
 
     try {
@@ -295,12 +257,12 @@ bool HttpCacheDatabase::enumerate(HttpCacheEnumerationListener* pListener)
             AutoSqliteDatabase autoSqliteDatabase(pDb);
 
             std::vector<std::string> columns;
-            columns.push_back(KeyCacheKey);
-            columns.push_back(KeyResponseBodySize);
+            columns.push_back(HttpInternalConstants::Database::Key::CacheKey);
+            columns.push_back(HttpInternalConstants::Database::Key::ResponseBodySize);
 
             // sort by LastAccessedSec.
-            std::string orderBy = KeyLastAccessedAtEpoch + " ASC";
-            pCursor = pDb->query(HttpConstants::Database::TableName, &columns, NULL, NULL, NULL,
+            std::string orderBy = std::string(HttpInternalConstants::Database::Key::LastAccessedAtEpoch) + " ASC";
+            pCursor = pDb->query(HttpInternalConstants::Database::TableName, &columns, NULL, NULL, NULL,
                     NULL, &orderBy, NULL);
         }
         AutoSqliteCursor autoSqliteCursor(pCursor);
@@ -311,16 +273,23 @@ bool HttpCacheDatabase::enumerate(HttpCacheEnumerationListener* pListener)
                 param.m_responseBodySize = pCursor->getUnsignedLongLong(1);
                 if (!pListener->onEnumerate(param)) {
                     EASYHTTPCPP_LOG_D(Tag, "enumerate: error occurred onEnumerate.");
-                    return false;
+                    // could not store it in cache, but continue processing because it is cache. 
                 }
             } while (pCursor->moveToNext());
         }
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while enumerate(): %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
+}
 
-    return true;
+void HttpCacheDatabase::closeSqliteSession()
+{
+    m_pOpenHelper->closeSqliteSession();
+}
+
+HttpCacheDatabase::HttpCacheMetadataAll::HttpCacheMetadataAll() : m_lastAccessedAtEpoch(0)
+{
 }
 
 void HttpCacheDatabase::HttpCacheMetadataAll::setLastAccessedAtEpoch(std::time_t lastAccessedAtEpoch)
@@ -333,112 +302,114 @@ std::time_t HttpCacheDatabase::HttpCacheMetadataAll::getLastAccessedAtEpoch() co
     return m_lastAccessedAtEpoch;
 }
 
-bool HttpCacheDatabase::getMetadataAll(const std::string& key,
-        HttpCacheDatabase::HttpCacheMetadataAll& httpCacheMetadataAll)
+HttpCacheDatabase::HttpCacheMetadataAll::Ptr HttpCacheDatabase::getMetadataAll(const std::string& key)
 {
     // do not use lock because this method is for test.
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getReadableDatabase();
+        pDb = m_pOpenHelper->getReadableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "getMetadataAll() Unable to open database. Error: %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
     try {
         std::vector<std::string> columns;
-        columns.push_back(KeyUrl);
-        columns.push_back(KeyMethod);
-        columns.push_back(KeyStatusCode);
-        columns.push_back(KeyStatusMessage);
-        columns.push_back(KeyResponseHeaderJson);
-        columns.push_back(KeyResponseBodySize);
-        columns.push_back(KeySentRequestAtEpoch);
-        columns.push_back(KeyReceivedResponseAtEpoch);
-        columns.push_back(KeyCreatedAtEpoch);
-        columns.push_back(KeyLastAccessedAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::Url);
+        columns.push_back(HttpInternalConstants::Database::Key::Method);
+        columns.push_back(HttpInternalConstants::Database::Key::StatusCode);
+        columns.push_back(HttpInternalConstants::Database::Key::StatusMessage);
+        columns.push_back(HttpInternalConstants::Database::Key::ResponseHeaderJson);
+        columns.push_back(HttpInternalConstants::Database::Key::ResponseBodySize);
+        columns.push_back(HttpInternalConstants::Database::Key::SentRequestAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::ReceivedResponseAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::CreatedAtEpoch);
+        columns.push_back(HttpInternalConstants::Database::Key::LastAccessedAtEpoch);
 
-        std::string whereClause = KeyCacheKey + "=?";
+        std::string whereClause = std::string(HttpInternalConstants::Database::Key::CacheKey) + "=?";
         std::vector<std::string> whereArgs;
         whereArgs.push_back(key);
 
-        SqliteCursor::Ptr pCursor = pDb->query(HttpConstants::Database::TableName, &columns, &whereClause, &whereArgs,
-                NULL, NULL, NULL, NULL);
+        SqliteCursor::Ptr pCursor = pDb->query(HttpInternalConstants::Database::TableName, &columns, &whereClause,
+                &whereArgs, NULL, NULL, NULL, NULL);
         AutoSqliteCursor autoSqliteCursor(pCursor);
         if (pCursor->moveToFirst()) {
-            httpCacheMetadataAll.setKey(key);
-            httpCacheMetadataAll.setUrl(pCursor->getString(0));
-            httpCacheMetadataAll.setHttpMethod(static_cast<Request::HttpMethod> (pCursor->getInt(1)));
-            httpCacheMetadataAll.setStatusCode(pCursor->getInt(2));
-            httpCacheMetadataAll.setStatusMessage(pCursor->getString(3));
-            httpCacheMetadataAll.setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(pCursor->getString(4)));
-            httpCacheMetadataAll.setResponseBodySize(pCursor->getUnsignedLongLong(5));
-            httpCacheMetadataAll.setSentRequestAtEpoch(pCursor->getUnsignedLongLong(6));
-            httpCacheMetadataAll.setReceivedResponseAtEpoch(pCursor->getUnsignedLongLong(7));
-            httpCacheMetadataAll.setCreatedAtEpoch(pCursor->getUnsignedLongLong(8));
-            httpCacheMetadataAll.setLastAccessedAtEpoch(pCursor->getUnsignedLongLong(9));
+            HttpCacheDatabase::HttpCacheMetadataAll::Ptr pHttpCacheMetadataAll =
+                    new HttpCacheDatabase::HttpCacheMetadataAll();
+            pHttpCacheMetadataAll->setKey(key);
+            pHttpCacheMetadataAll->setUrl(pCursor->getString(0));
+            pHttpCacheMetadataAll->setHttpMethod(static_cast<Request::HttpMethod> (pCursor->getInt(1)));
+            pHttpCacheMetadataAll->setStatusCode(pCursor->getInt(2));
+            pHttpCacheMetadataAll->setStatusMessage(pCursor->getString(3));
+            pHttpCacheMetadataAll->setResponseHeaders(HttpUtil::exchangeJsonStrToHeaders(pCursor->getString(4)));
+            pHttpCacheMetadataAll->setResponseBodySize(pCursor->getUnsignedLongLong(5));
+            pHttpCacheMetadataAll->setSentRequestAtEpoch(pCursor->getUnsignedLongLong(6));
+            pHttpCacheMetadataAll->setReceivedResponseAtEpoch(pCursor->getUnsignedLongLong(7));
+            pHttpCacheMetadataAll->setCreatedAtEpoch(pCursor->getUnsignedLongLong(8));
+            pHttpCacheMetadataAll->setLastAccessedAtEpoch(pCursor->getUnsignedLongLong(9));
+            return pHttpCacheMetadataAll;
         } else {
             EASYHTTPCPP_LOG_D(Tag, "getMetadataAll(): can not get row");
-            return false;
+            return NULL;
         }
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while getMetadataAll(): %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
-    return true;
 }
 
-bool HttpCacheDatabase::updateMetadataAll(const std::string& key,
-        HttpCacheDatabase::HttpCacheMetadataAll& httpCacheMetadataAll)
+void HttpCacheDatabase::updateMetadataAll(const std::string& key,
+        HttpCacheDatabase::HttpCacheMetadataAll::Ptr pHttpCacheMetadataAll)
 {
     // do not use lock because this method is for test.
 
     SqliteDatabase::Ptr pDb;
     try {
-        pDb = getWritableDatabase();
+        pDb = m_pOpenHelper->getWritableDatabase();
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "updateMetadataAll() Unable to open database. Error: %s", e.getMessage().c_str());
-        return false;
+        throw;
     }
     AutoSqliteDatabase autoSqliteDatabase(pDb);
 
-    bool updated = false;
     try {
         // always use transactions for speedy and reliable updates
         AutoSqliteTransaction autoSqliteTransaction(pDb);
 
         ContentValues values;
-        values.put(KeyCacheKey, httpCacheMetadataAll.getKey());
-        values.put(KeyUrl, httpCacheMetadataAll.getUrl());
-        values.put(KeyMethod, httpCacheMetadataAll.getHttpMethod());
-        values.put(KeyStatusCode, httpCacheMetadataAll.getStatusCode());
-        values.put(KeyStatusMessage, httpCacheMetadataAll.getStatusMessage());
-        values.put(KeyResponseHeaderJson,
-                HttpUtil::exchangeHeadersToJsonStr(httpCacheMetadataAll.getResponseHeaders()));
-        values.put(KeyResponseBodySize, httpCacheMetadataAll.getResponseBodySize());
-        values.put(KeySentRequestAtEpoch, httpCacheMetadataAll.getSentRequestAtEpoch());
-        values.put(KeyReceivedResponseAtEpoch, httpCacheMetadataAll.getReceivedResponseAtEpoch());
-        values.put(KeyCreatedAtEpoch, httpCacheMetadataAll.getCreatedAtEpoch());
-        values.put(KeyLastAccessedAtEpoch, httpCacheMetadataAll.getLastAccessedAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::CacheKey, pHttpCacheMetadataAll->getKey());
+        values.put(HttpInternalConstants::Database::Key::Url, pHttpCacheMetadataAll->getUrl());
+        values.put(HttpInternalConstants::Database::Key::Method, pHttpCacheMetadataAll->getHttpMethod());
+        values.put(HttpInternalConstants::Database::Key::StatusCode, pHttpCacheMetadataAll->getStatusCode());
+        values.put(HttpInternalConstants::Database::Key::StatusMessage, pHttpCacheMetadataAll->getStatusMessage());
+        values.put(HttpInternalConstants::Database::Key::ResponseHeaderJson,
+                HttpUtil::exchangeHeadersToJsonStr(pHttpCacheMetadataAll->getResponseHeaders()));
+        values.put(HttpInternalConstants::Database::Key::ResponseBodySize,
+                pHttpCacheMetadataAll->getResponseBodySize());
+        values.put(HttpInternalConstants::Database::Key::SentRequestAtEpoch,
+                pHttpCacheMetadataAll->getSentRequestAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::ReceivedResponseAtEpoch,
+                pHttpCacheMetadataAll->getReceivedResponseAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::CreatedAtEpoch, pHttpCacheMetadataAll->getCreatedAtEpoch());
+        values.put(HttpInternalConstants::Database::Key::LastAccessedAtEpoch,
+                pHttpCacheMetadataAll->getLastAccessedAtEpoch());
 
         // do an INSERT, and if that INSERT fails because of a conflict,
         // delete the conflicting rows before INSERTing again
-        pDb->replace(HttpConstants::Database::TableName, values);
+        pDb->replace(HttpInternalConstants::Database::TableName, values);
         EASYHTTPCPP_LOG_V(Tag, "New HttpCacheMetadata updateMetadataAll.");
 
         pDb->setTransactionSuccessful();
-        updated = true;
 
     } catch (const SqlException& e) {
         EASYHTTPCPP_LOG_D(Tag, "SQLite error while updateMetadataAll(): %s", e.getMessage().c_str());
-        updated = false;
+        throw;
     }
-    return updated;
 }
 
-void HttpCacheDatabase::dumpMetadata(HttpCacheMetadata* pHttpCacheMetadata)
+void HttpCacheDatabase::dumpMetadata(HttpCacheMetadata::Ptr pHttpCacheMetadata)
 {
     EASYHTTPCPP_LOG_D(Tag, "url = %s", pHttpCacheMetadata->getUrl().c_str());
     EASYHTTPCPP_LOG_D(Tag, "method = %s", HttpUtil::httpMethodToString(pHttpCacheMetadata->getHttpMethod()).c_str());

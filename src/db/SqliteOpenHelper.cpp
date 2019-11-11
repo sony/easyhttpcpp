@@ -71,6 +71,22 @@ void SqliteOpenHelper::closeSqliteSession() {
     }
 }
 
+void SqliteOpenHelper::setDatabaseCorruptionListener(SqliteDatabaseCorruptionListener::Ptr pListener)
+{
+    Poco::FastMutex::ScopedLock lock(m_mutex);
+    m_pDatabaseCorruptionListener = pListener;
+    if (m_database) {
+        m_database->setDatabaseCorruptionListener(m_pDatabaseCorruptionListener);
+    }
+}
+
+void SqliteOpenHelper::overrideInternalDatabase(SqliteDatabase::Ptr pDatabase)
+{
+    Poco::FastMutex::ScopedLock lock(m_mutex);
+    EASYHTTPCPP_LOG_D(Tag, "Change internal database.");
+    m_database = pDatabase;
+}
+
 SqliteDatabase::Ptr SqliteOpenHelper::getWritableDatabase()
 {
     return getDatabase();
@@ -123,7 +139,7 @@ SqliteDatabase::Ptr SqliteOpenHelper::getDatabase()
         if (db) {
             db->reopen();
         } else {
-            db = SqliteDatabase::openOrCreateDatabase(m_path.toString());
+            db = createDatabase();
         }
 
         onConfigure(*db);
@@ -169,6 +185,15 @@ SqliteDatabase::Ptr SqliteOpenHelper::getDatabase()
         m_initializing = false;
         throw;
     }
+}
+
+SqliteDatabase::Ptr SqliteOpenHelper::createDatabase()
+{
+    SqliteDatabase::Ptr db = SqliteDatabase::openOrCreateDatabase(m_path.toString());
+    if (m_pDatabaseCorruptionListener) {
+        db->setDatabaseCorruptionListener(m_pDatabaseCorruptionListener);
+    }
+    return db;
 }
 
 } /* namespace db */

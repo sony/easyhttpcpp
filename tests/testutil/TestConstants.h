@@ -5,10 +5,12 @@
 #ifndef EASYHTTPCPP_TESTUTIL_TESTCONSTANTS_H_INCLUDED
 #define EASYHTTPCPP_TESTUTIL_TESTCONSTANTS_H_INCLUDED
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class TestConstants {
+class EASYHTTPCPP_TESTUTIL_API TestConstants {
 public:
     static const char* const AppIdDevEnclaveClient;
     static const char* const AnalyticsDispatchEndpointQaV1;
@@ -18,6 +20,7 @@ public:
     static const char* const BaseUrlSni;
     static const char* const CertificateUrlEnclaveConfiguration;
     static const char* const CertificateUrlSni;
+    static const char* const LongDirName64byte;
 };
 
 } /* namespace testutil */

@@ -18,10 +18,9 @@ target_link_libraries(${TESTRUNNER}
                       easyhttp-testutil
                       easyhttp
 		      GMock::main
-                      Poco::Foundation
-                      Poco::Data Poco::DataSQLite
-                      Poco::Net Poco::NetSSL Poco::Crypto
-                      OpenSSL::SSL OpenSSL::Crypto)
+                      ${Poco_LIBRARIES}
+                      ${OPENSSL_SSL_LIBRARY}
+                      ${OPENSSL_CRYPTO_LIBRARY})
 
 # add private headers to include search path as well
 target_include_directories(${TESTRUNNER}

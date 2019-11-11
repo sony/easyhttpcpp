@@ -29,8 +29,7 @@ public:
                 m_pCursor->close();
             }
         } catch (const SqlException& ignored) {
-            EASYHTTPCPP_LOG_W(Tag, "Error while closing cursor. Ignored.");
-            EASYHTTPCPP_LOG_V(Tag, "Error while closing cursor. Ignored. Details: %s", ignored.getMessage().c_str());
+            EASYHTTPCPP_LOG_D(Tag, "Error while closing cursor. Ignored. Details: %s", ignored.getMessage().c_str());
         }
     }
 

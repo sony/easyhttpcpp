@@ -33,8 +33,7 @@ public:
                 m_pDatabase->endTransaction();
             }
         } catch (const SqlException& ignored) {
-            EASYHTTPCPP_LOG_W(Tag, "Error while endTransaction(). Ignored.");
-            EASYHTTPCPP_LOG_V(Tag, "Error while endTransaction(). Ignored. Details: %s", ignored.getMessage().c_str());
+            EASYHTTPCPP_LOG_D(Tag, "Error while endTransaction(). Ignored. Details: %s", ignored.getMessage().c_str());
         }
     }
 

@@ -12,6 +12,7 @@
 
 #include "easyhttpcpp/db/DbExports.h"
 #include "easyhttpcpp/db/SqliteDatabase.h"
+#include "easyhttpcpp/db/SqliteDatabaseCorruptionListener.h"
 
 namespace easyhttpcpp {
 namespace db {
@@ -33,14 +34,20 @@ public:
     virtual void onDowngrade(SqliteDatabase& db, unsigned int oldVersion, unsigned int newVersion);
     virtual void close();
     virtual void closeSqliteSession();
+    virtual void setDatabaseCorruptionListener(SqliteDatabaseCorruptionListener::Ptr pListener);
+
+    // this method is for internal testing only.
+    virtual void overrideInternalDatabase(SqliteDatabase::Ptr pDatabase);
 
 private:
     SqliteDatabase::Ptr getDatabase();
+    SqliteDatabase::Ptr createDatabase();
 
     bool m_initializing;
     Poco::Path m_path;
     unsigned int m_version;
     SqliteDatabase::Ptr m_database;
+    SqliteDatabaseCorruptionListener::Ptr m_pDatabaseCorruptionListener;
 
     Poco::FastMutex m_mutex;
 };

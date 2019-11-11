@@ -32,6 +32,7 @@ public:
     virtual bool remove(const std::string& key);
     virtual CacheInfoWithDataSize::Ptr get(const std::string& key);
     virtual bool clear(bool mayDeleteIfBusy);
+    virtual void reset();
 
     virtual bool makeSpace(size_t requestSize);
     virtual size_t getMaxSize() const;

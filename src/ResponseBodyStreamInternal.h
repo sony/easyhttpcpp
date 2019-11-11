@@ -9,13 +9,14 @@
 
 #include "Poco/Mutex.h"
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/ResponseBodyStream.h"
 
 #include "HttpTypedefs.h"
 
 namespace easyhttpcpp {
 
-class ResponseBodyStreamInternal : public ResponseBodyStream {
+class EASYHTTPCPP_HTTP_INTERNAL_API ResponseBodyStreamInternal : public ResponseBodyStream {
 public:
     ResponseBodyStreamInternal(std::istream& content);
     virtual ~ResponseBodyStreamInternal();

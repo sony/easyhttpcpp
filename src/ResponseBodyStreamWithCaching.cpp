@@ -4,6 +4,7 @@
 
 #include "Poco/Exception.h"
 #include "Poco/File.h"
+#include "Poco/FileStream.h"
 #include "Poco/TemporaryFile.h"
 #include "Poco/Timestamp.h"
 
@@ -132,7 +133,7 @@ bool ResponseBodyStreamWithCaching::createTempFile()
     }
 
     try {
-        m_pTempFileStream = new std::ofstream(m_tempFilePath.c_str(),
+        m_pTempFileStream = new Poco::FileOutputStream(m_tempFilePath,
                 std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
         m_writtenDataSize = 0;
 

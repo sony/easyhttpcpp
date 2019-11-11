@@ -39,57 +39,13 @@ static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache
 static const char* const TestDataForCacheFromDb = "/HttpIntegrationTest/01_cache_from_db/HttpCache/windows/cache";
 #endif
 static const char* const LruQuery1 = "test=1";
-
-static const Request::HttpMethod Test1HttpMethod = Request::HttpMethodGet;
-static const int Test1StatusCode = Poco::Net::HTTPResponse::HTTP_OK;
-static const char* const Test1StatusMessage = "OK";
-static const char* const Test1Header1 = "x-header1";
-static const char* const Test1HeaderValue1 = "x-value1";
 static const char* const Test1ResponseBody = "test1 response body";
-static const char* const Test1SentRequestTime = "Fri, 05 Aug 2016 12:00:00 GMT";
-static const char* const Test1ReceiveResponseTime = "Fri, 05 Aug 2016 12:00:10 GMT";
-static const char* const Test1CreatedMetadataTime = "Fri, 05 Aug 2016 12:00:20 GMT";
 static const char* const Test1TempFilename = "tempFile0001";
 
 static const size_t ResponseBufferBytes = 8192;
 static const int MultiThreadCount = 10;
 
 namespace {
-
-HttpCacheMetadata* createHttpCacheMetadata(const std::string& key, const std::string& url,
-        size_t responseBodySize)
-{
-    HttpCacheMetadata* pHttpCacheMetadata = new HttpCacheMetadata();
-    pHttpCacheMetadata->setKey(key);
-    pHttpCacheMetadata->setUrl(url);
-    pHttpCacheMetadata->setHttpMethod(Test1HttpMethod);
-    pHttpCacheMetadata->setStatusCode(Test1StatusCode);
-    pHttpCacheMetadata->setStatusMessage(Test1StatusMessage);
-    Headers::Ptr pHeaders = new Headers();
-    pHeaders->set(Test1Header1, Test1HeaderValue1);
-    pHttpCacheMetadata->setResponseHeaders(pHeaders);
-    pHttpCacheMetadata->setResponseBodySize(responseBodySize);
-    Poco::Timestamp timeStamp;
-    HttpUtil::tryParseDate(Test1SentRequestTime, timeStamp);
-    pHttpCacheMetadata->setSentRequestAtEpoch(timeStamp.epochTime());
-    HttpUtil::tryParseDate(Test1ReceiveResponseTime, timeStamp);
-    pHttpCacheMetadata->setReceivedResponseAtEpoch(timeStamp.epochTime());
-    HttpUtil::tryParseDate(Test1CreatedMetadataTime, timeStamp);
-    pHttpCacheMetadata->setCreatedAtEpoch(timeStamp.epochTime());
-    return pHttpCacheMetadata;
-}
-
-std::string createResponseTempFile(int no)
-{
-    Poco::File tempDir(HttpTestUtil::getDefaultCacheTempDir());
-    tempDir.createDirectories();
-    std::string tempFilename = StringUtil::format("%s%s_%d", HttpTestUtil::getDefaultCacheTempDir().c_str(),
-            Test1TempFilename, no);
-    Poco::FileOutputStream tempFileStream(tempFilename, std::ios::out | std::ios::trunc | std::ios::binary);
-    tempFileStream.write(Test1ResponseBody, strlen(Test1ResponseBody));
-    tempFileStream.close();
-    return tempFilename;
-}
 
 class MethodExecutionRunner : public SynchronizedExecutionRunner {
 public:
@@ -174,7 +130,7 @@ public:
     bool execute()
     {
         // prepare
-        CacheMetadata::Ptr pCacheMetadata = createHttpCacheMetadata(m_key, m_url, m_responseBodySize);
+        CacheMetadata::Ptr pCacheMetadata = HttpTestUtil::createHttpCacheMetadata(m_key, m_url, m_responseBodySize);
 
         setToReady();
         waitToStart();
@@ -242,8 +198,8 @@ bool prepareToCreateCache(HttpFileCache* pHttpFileCache)
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
-        CacheMetadata::Ptr pCacheMetadata = createHttpCacheMetadata(key, url, strlen(Test1ResponseBody));
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
+        CacheMetadata::Ptr pCacheMetadata = HttpTestUtil::createHttpCacheMetadata(key, url, strlen(Test1ResponseBody));
         if (!pHttpFileCache->put(key, pCacheMetadata, tempFilePath)) {
             EASYHTTPCPP_TESTLOG_I(Tag, "prepareToCreateCache: failed. [%d] url=%s", i, url.c_str());
             return false;
@@ -264,6 +220,17 @@ protected:
 
         EASYHTTPCPP_TESTLOG_SETUP_END();
     }
+
+    void prepareTestData()
+    {
+        std::string cachePath = HttpTestUtil::getDefaultCachePath();
+        Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
+        cacheParentPath.createDirectories();
+        Poco::File srcTestData(Poco::Path(FileUtil::convertToAbsolutePathString(
+                EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb));
+        srcTestData.copyTo(cachePath);
+    }
+
     Poco::AutoPtr<MethodExecutionRunner> m_pExecutionRunners[MultiThreadCount];
 };
 
@@ -285,7 +252,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new GetMetadataExecutionRunner(&httpFileCache, key, url);
     }
 
@@ -303,17 +270,19 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     threadPool.joinAll();
 
     // Then: getMetadata succeeded
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(HttpTestUtil::getDefaultCachePath()));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(
+            HttpTestUtil::getDefaultCachePath())));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     for (int i = 0; i < MultiThreadCount; i++) {
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
         HttpCacheMetadata* pHttpCacheMetadata =
                 static_cast<HttpCacheMetadata*>(
                 static_cast<GetMetadataExecutionRunner*>(m_pExecutionRunners[i].get())->getCacheMetadata().get());
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[i]->getKey(), metadata));
-        EXPECT_EQ(metadata.getKey(), pHttpCacheMetadata->getKey());
-        EXPECT_EQ(metadata.getUrl(), pHttpCacheMetadata->getUrl());
-        EXPECT_EQ(metadata.getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
+        pMetadata = db.getMetadataAll(m_pExecutionRunners[i]->getKey());
+        EXPECT_FALSE(pMetadata.isNull());
+        EXPECT_EQ(pMetadata->getKey(), pHttpCacheMetadata->getKey());
+        EXPECT_EQ(pMetadata->getUrl(), pHttpCacheMetadata->getUrl());
+        EXPECT_EQ(pMetadata->getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
     }
 }
 
@@ -327,11 +296,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     // LRU_QUERY3
     // LRU_QUERY1
     // LRU_QUERY4
+    prepareTestData();
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
-    cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
-    srcTestData.copyTo(cachePath);
 
     Poco::Path cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
@@ -358,17 +324,18 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     threadPool.joinAll();
 
     // Then: getMetadata succeeded
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    HttpCacheDatabase::HttpCacheMetadataAll::Ptr pMetadata;
     for (int i = 0; i < MultiThreadCount; i++) {
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
         HttpCacheMetadata* pHttpCacheMetadata =
                 static_cast<HttpCacheMetadata*>(
                 static_cast<GetMetadataExecutionRunner*>(m_pExecutionRunners[i].get())->getCacheMetadata().get());
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[i]->getKey(), metadata));
-        EXPECT_EQ(metadata.getKey(), pHttpCacheMetadata->getKey());
-        EXPECT_EQ(metadata.getUrl(), pHttpCacheMetadata->getUrl());
-        EXPECT_EQ(metadata.getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
+        pMetadata = db.getMetadataAll(m_pExecutionRunners[i]->getKey());
+        EXPECT_FALSE(pMetadata.isNull());
+        EXPECT_EQ(pMetadata->getKey(), pHttpCacheMetadata->getKey());
+        EXPECT_EQ(pMetadata->getUrl(), pHttpCacheMetadata->getUrl());
+        EXPECT_EQ(pMetadata->getHttpMethod(), pHttpCacheMetadata->getHttpMethod());
     }
 }
 
@@ -390,7 +357,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new GetDataExecutionRunner(&httpFileCache, key, url);
     }
 
@@ -436,11 +403,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     // LRU_QUERY3
     // LRU_QUERY1
     // LRU_QUERY4
+    prepareTestData();
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
-    cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
-    srcTestData.copyTo(cachePath);
 
     Poco::Path cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
@@ -499,7 +463,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new PutExecutionRunner(&httpFileCache, key, url, tempFilePath,
                 strlen(Test1ResponseBody));
     }
@@ -519,11 +483,10 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
 
     // Then: put succeeded
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     for (int i = 0; i < MultiThreadCount; i++) {
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[i]->getKey(), metadata));
+        EXPECT_FALSE(db.getMetadataAll(m_pExecutionRunners[i]->getKey()).isNull());
         Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
                 m_pExecutionRunners[i]->getUrl()));
         EXPECT_TRUE(responseBodyFile.exists());
@@ -548,7 +511,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new PutExecutionRunner(&httpFileCache, key, url, tempFilePath,
                 strlen(Test1ResponseBody));
     }
@@ -568,11 +531,10 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
 
     // Then: put succeeded
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     for (int i = 0; i < MultiThreadCount; i++) {
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
-        EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[i]->getKey(), metadata));
+        EXPECT_FALSE(db.getMetadataAll(m_pExecutionRunners[i]->getKey()).isNull());
         Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
                 m_pExecutionRunners[i]->getUrl()));
         EXPECT_TRUE(responseBodyFile.exists());
@@ -589,11 +551,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     // LRU_QUERY3
     // LRU_QUERY1
     // LRU_QUERY4
+    prepareTestData();
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
-    cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
-    srcTestData.copyTo(cachePath);
 
     Poco::Path cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
@@ -603,7 +562,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new PutExecutionRunner(&httpFileCache, key, url, tempFilePath,
                 strlen(Test1ResponseBody));
     }
@@ -626,9 +585,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
     }
 
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[0]->getKey(), metadata));
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    EXPECT_FALSE(db.getMetadataAll(m_pExecutionRunners[0]->getKey()).isNull());
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
             m_pExecutionRunners[0]->getUrl()));
     EXPECT_TRUE(responseBodyFile.exists());
@@ -652,7 +610,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new RemoveExecutionRunner(&httpFileCache, key, url);
     }
 
@@ -671,11 +629,10 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
 
     // Then: remove succeeded
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
     for (int i = 0; i < MultiThreadCount; i++) {
         EXPECT_TRUE(m_pExecutionRunners[i]->isSuccess());
-        EXPECT_FALSE(db.getMetadataAll(m_pExecutionRunners[i]->getKey(), metadata));
+        EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[i]->getKey()).isNull());
         Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
                 m_pExecutionRunners[i]->getUrl()));
         EXPECT_FALSE(responseBodyFile.exists());
@@ -692,11 +649,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     // LRU_QUERY3
     // LRU_QUERY1
     // LRU_QUERY4
+    prepareTestData();
     std::string cachePath = HttpTestUtil::getDefaultCachePath();
-    Poco::File cacheParentPath(HttpTestUtil::getDefaultCacheParentPath());
-    cacheParentPath.createDirectories();
-    Poco::File srcTestData(std::string(EASYHTTPCPP_STRINGIFY_MACRO(RUNTIME_DATA_ROOT)) + TestDataForCacheFromDb);
-    srcTestData.copyTo(cachePath);
 
     Poco::Path cacheRootDir(HttpTestUtil::getDefaultCacheRootDir());
     HttpFileCache httpFileCache(cacheRootDir, HttpTestConstants::DefaultCacheMaxSize);
@@ -706,7 +660,7 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, LruQuery1);
         std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-        std::string tempFilePath = createResponseTempFile(i);
+        std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
         m_pExecutionRunners[i] = new RemoveExecutionRunner(&httpFileCache, key, url);
     }
 
@@ -732,9 +686,8 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
     }
     EXPECT_EQ(1, successCount);
 
-    HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-    HttpCacheDatabase::HttpCacheMetadataAll metadata;
-    EXPECT_FALSE(db.getMetadataAll(m_pExecutionRunners[0]->getKey(), metadata));
+    HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
+    EXPECT_TRUE(db.getMetadataAll(m_pExecutionRunners[0]->getKey()).isNull());
     Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath, Request::HttpMethodGet,
             m_pExecutionRunners[0]->getUrl()));
     EXPECT_FALSE(responseBodyFile.exists());
@@ -760,8 +713,9 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
             std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                     HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
             std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-            std::string tempFilePath = createResponseTempFile(i);
-            CacheMetadata::Ptr pCacheMetadata = createHttpCacheMetadata(key, url, strlen(Test1ResponseBody));
+            std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
+            CacheMetadata::Ptr pCacheMetadata = HttpTestUtil::createHttpCacheMetadata(key, url,
+                    strlen(Test1ResponseBody));
             ASSERT_TRUE(httpFileCache.put(key, pCacheMetadata, tempFilePath));
             lastKey = key;
         }
@@ -809,14 +763,13 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
 
         // check completion of purge
         std::string cachePath = HttpTestUtil::getDefaultCachePath();
-        HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-        HttpCacheDatabase::HttpCacheMetadataAll metadata;
+        HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
         for (int i = 0; i < 20; i++) {
             std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                     HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
             std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
             
-            EXPECT_FALSE(db.getMetadataAll(key, metadata));
+            EXPECT_TRUE(db.getMetadataAll(key).isNull());
             Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
                     Request::HttpMethodGet, url));
             EXPECT_FALSE(responseBodyFile.exists());
@@ -845,8 +798,9 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
             std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                     HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
             std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
-            std::string tempFilePath = createResponseTempFile(i);
-            CacheMetadata::Ptr pCacheMetadata = createHttpCacheMetadata(key, url, strlen(Test1ResponseBody));
+            std::string tempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody, i);
+            CacheMetadata::Ptr pCacheMetadata = HttpTestUtil::createHttpCacheMetadata(key, url,
+                    strlen(Test1ResponseBody));
             ASSERT_TRUE(httpFileCache.put(key, pCacheMetadata, tempFilePath));
         }
 
@@ -863,8 +817,9 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
         std::string targetUrl = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                 HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", targetId));
         std::string targetKey = HttpUtil::makeCacheKey(Request::HttpMethodGet, targetUrl);
-        std::string targetTempFilePath = createResponseTempFile(targetId);
-        CacheMetadata::Ptr pTargetCacheMetadata = createHttpCacheMetadata(targetKey, targetUrl,
+        std::string targetTempFilePath = HttpTestUtil::createResponseTempFile(Test1TempFilename, Test1ResponseBody,
+                targetId);
+        CacheMetadata::Ptr pTargetCacheMetadata = HttpTestUtil::createHttpCacheMetadata(targetKey, targetUrl,
                 strlen(Test1ResponseBody));
 
         // When : put
@@ -901,21 +856,20 @@ TEST_F(HttpFileCacheWithMultiThreadIntegrationTest,
 
         // check completion of purge
         std::string cachePath = HttpTestUtil::getDefaultCachePath();
-        HttpCacheDatabase db(HttpTestUtil::createDatabasePath(cachePath));
-        HttpCacheDatabase::HttpCacheMetadataAll metadata;
+        HttpCacheDatabase db(new HttpCacheDatabaseOpenHelper(HttpTestUtil::createDatabasePath(cachePath)));
         for (int i = 0; i < 20; i++) {
             std::string url = HttpTestUtil::makeUrl(HttpTestConstants::Http, HttpTestConstants::DefaultHost,
                     HttpTestConstants::DefaultPort, HttpTestConstants::DefaultPath, StringUtil::format("no=%d", i));
             std::string key = HttpUtil::makeCacheKey(Request::HttpMethodGet, url);
             
-            EXPECT_FALSE(db.getMetadataAll(key, metadata));
+            EXPECT_TRUE(db.getMetadataAll(key).isNull());
             Poco::File responseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
                     Request::HttpMethodGet, url));
             EXPECT_FALSE(responseBodyFile.exists());
         }
 
         // check put
-        EXPECT_TRUE(db.getMetadataAll(targetKey, metadata));
+        EXPECT_FALSE(db.getMetadataAll(targetKey).isNull());
         Poco::File targetResponseBodyFile(HttpTestUtil::createCachedResponsedBodyFilePath(cachePath,
                 Request::HttpMethodGet, targetUrl));
         EXPECT_TRUE(targetResponseBodyFile.exists());

@@ -5,10 +5,12 @@
 #ifndef EASYHTTPCPP_TESTUTIL_RANDOMUTIL_H_INCLUDED
 #define EASYHTTPCPP_TESTUTIL_RANDOMUTIL_H_INCLUDED
 
+#include "TestUtilExports.h"
+
 namespace easyhttpcpp {
 namespace testutil {
 
-class RandomUtil {
+class EASYHTTPCPP_TESTUTIL_API RandomUtil {
 public:
     static void getRandomBytes(size_t size, easyhttpcpp::common::ByteArrayBuffer& buffer);
 

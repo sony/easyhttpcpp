@@ -21,6 +21,7 @@
 #include "HttpCacheInternal.h"
 #include "HttpCacheMetadata.h"
 #include "HttpFileCache.h"
+#include "HttpInternalConstants.h"
 #include "HttpUtil.h"
 
 using easyhttpcpp::common::Cache;
@@ -36,13 +37,13 @@ static const std::string Tag = "HttpCacheInternal";
 HttpCacheInternal::HttpCacheInternal(const Poco::Path& path, size_t maxSize) : m_maxSize(maxSize)
 {
     m_cachePath = path;
-    m_cacheRootDir = path;
-    Poco::Path cacheDir(HttpConstants::Caches::CacheDir);
+    m_cacheRootDir = path.absolute();
+    Poco::Path cacheDir(HttpInternalConstants::Caches::CacheDir);
     m_cacheRootDir.append(cacheDir);
     m_pFileCache = new HttpFileCache(m_cacheRootDir, maxSize);
     m_pCacheManager = new CacheManager(NULL, m_pFileCache);
     Poco::Path tempDir(m_cacheRootDir);
-    Poco::Path tempChildDir(HttpConstants::Caches::TempDir);
+    Poco::Path tempChildDir(HttpInternalConstants::Caches::TempDir);
     tempDir.append(tempChildDir);
     m_cacheTempDir = tempDir.toString();
 }

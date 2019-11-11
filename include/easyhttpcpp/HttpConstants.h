@@ -14,13 +14,6 @@ namespace easyhttpcpp {
 class EASYHTTPCPP_HTTP_API HttpConstants {
 public:
 
-    class EASYHTTPCPP_HTTP_API Caches {
-    public:
-        static const char* const DataFileExtention;
-        static const char* const CacheDir;
-        static const char* const TempDir;
-    };
-
     class EASYHTTPCPP_HTTP_API HeaderNames {
     public:
         static const char* const Age;
@@ -78,19 +71,6 @@ public:
     public:
         static const char* const Http;
         static const char* const Https;
-    };
-
-    class EASYHTTPCPP_HTTP_API Database {
-    public:
-        static const char* const FileName;
-        static const char* const TableName;
-        static const unsigned int Version;
-    };
-
-    class AsyncRequests {
-    public:
-        static const unsigned int DefaultCorePoolSizeOfAsyncThreadPool;
-        static const unsigned int DefaultMaximumPoolSizeOfAsyncThreadPool;
     };
 };
 

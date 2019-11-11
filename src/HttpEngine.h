@@ -13,6 +13,7 @@
 #include "Poco/Net/Context.h"
 #include "Poco/Net/HTTPClientSession.h"
 
+#include "easyhttpcpp/HttpExports.h"
 #include "easyhttpcpp/Request.h"
 #include "easyhttpcpp/Response.h"
 #include "easyhttpcpp/ResponseBody.h"
@@ -26,7 +27,7 @@
 
 namespace easyhttpcpp {
 
-class HttpEngine : public ConnectionStatusListener, public Poco::RefCountedObject {
+class EASYHTTPCPP_HTTP_INTERNAL_API HttpEngine : public ConnectionStatusListener, public Poco::RefCountedObject {
 public:
     typedef Poco::AutoPtr<HttpEngine> Ptr;
 
