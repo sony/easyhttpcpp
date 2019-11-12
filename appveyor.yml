@@ -1,0 +1,45 @@
+branches:
+  only:
+    - master
+
+clone_depth: 5
+
+image: Visual Studio 2015
+
+environment:
+  global:
+    POCO_VERSION: "poco-1.7.9-release"
+    GOOGLETEST_VERSION: "1.8.0-hunter-p2"
+    CMAKE_VS_VERSION: "14 2015"
+    MSBUILD_PATH: "\"C:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe\""
+
+install:
+  - ps: "mkdir -p $env:APPVEYOR_BUILD_FOLDER/dependencies/install"
+  - ps: "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12"
+  # download Poco
+  - curl -LfsS -o "%POCO_VERSION%.zip" "https://github.com/pocoproject/poco/archive/%POCO_VERSION%.zip"
+  - 7z x "%POCO_VERSION%.zip" -o"%APPVEYOR_BUILD_FOLDER%\dependencies" -y
+  # download GoogleTest
+  - curl -LfsS -o "%GOOGLETEST_VERSION%.zip" "https://github.com/hunter-packages/googletest/archive/%GOOGLETEST_VERSION%.zip"
+  - 7z x "%GOOGLETEST_VERSION%.zip" -o"%APPVEYOR_BUILD_FOLDER%\dependencies" -y
+  - ps: "cd $env:APPVEYOR_BUILD_FOLDER/dependencies"
+#   # install Poco
+  - ps: "mkdir poco-$env:POCO_VERSION/_build"
+  - ps: "cd poco-$env:POCO_VERSION/_build"
+  - cmake -G "Visual Studio %CMAKE_VS_VERSION%" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DPOCO_VERBOSE_MESSAGES=OFF -DPOCO_STATIC=ON -DPOCO_UNBUNDLED=OFF -DENABLE_XML=ON -DENABLE_JSON=ON -DENABLE_UTIL=ON -DENABLE_NET=ON -DENABLE_NETSSL=OFF -DENABLE_NETSSL_WIN=ON -DENABLE_CRYPTO=OFF -DENABLE_DATA=ON -DENABLE_DATA_SQLITE=ON -DENABLE_ZIP=OFF -DENABLE_DATA_MYSQL=OFF -DENABLE_DATA_ODBC=OFF -DENABLE_MONGODB=OFF -DENABLE_PDF=OFF -DENABLE_SEVENZIP=OFF -DENABLE_PAGECOMPILER=OFF -DENABLE_PAGECOMPILER_FILE2PAGE=OFF -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../../_install ../
+  - "%MSBUILD_PATH% Poco.sln"
+  - "%MSBUILD_PATH% INSTALL.vcxproj"
+  - ps: cd ../..
+  # install GoogleTest
+  - ps: "mkdir googletest-$env:GOOGLETEST_VERSION/_build"
+  - ps: "cd googletest-$env:GOOGLETEST_VERSION/_build"
+  - cmake -G "Visual Studio %CMAKE_VS_VERSION%" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../_install ../
+  - "%MSBUILD_PATH% INSTALL.vcxproj"
+  - ps: cd ../../..
+
+build_script:
+  - ps: "mkdir $env:APPVEYOR_BUILD_FOLDER/_build"
+  - ps: "cd $env:APPVEYOR_BUILD_FOLDER/_build"
+  - cmake -G "Visual Studio %CMAKE_VS_VERSION%" -DCMAKE_BUILD_TYPE=Release -DEASYHTTPCPP_VERBOSE_MESSAGES=ON -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_PREFIX_PATH="%APPVEYOR_BUILD_FOLDER%"/dependencies/_install -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=../../_install ../
+  - "%MSBUILD_PATH% easyhttpcpp.sln"
+  - "%MSBUILD_PATH% INSTALL.vcxproj"
