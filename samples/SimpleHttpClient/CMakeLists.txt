@@ -1,4 +1,4 @@
-set(SAMPLE_NAME "${CMAKE_PROJECT_NAME}-SimpleHttpClient")
+set(SAMPLE_NAME "${PROJECT_NAME}-SimpleHttpClient")
 
 set(SAMPLE_SRCS "SimpleHttpClient.cpp")
 

@@ -9,34 +9,34 @@
 macro(easyhttpcpp_generate_package target_name)
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
-            "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}${target_name}ConfigVersion.cmake"
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}${target_name}ConfigVersion.cmake"
             VERSION ${PROJECT_VERSION}
             COMPATIBILITY AnyNewerVersion
     )
     export(EXPORT "${target_name}Targets"
-           FILE "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}${target_name}Targets.cmake"
-           NAMESPACE "${CMAKE_PROJECT_NAME}::"
+           FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}${target_name}Targets.cmake"
+           NAMESPACE "${PROJECT_NAME}::"
            )
 
-    configure_file("${CMAKE_MODULE_PATH}/${CMAKE_PROJECT_NAME}${target_name}Config.cmake.in"
-                   "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}${target_name}Config.cmake"
+    configure_file("${PROJECT_MODULE_PATH}/${PROJECT_NAME}${target_name}Config.cmake.in"
+                   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}${target_name}Config.cmake"
                    @ONLY
                    )
 
-    set(ConfigPackageLocation "lib/cmake/${CMAKE_PROJECT_NAME}")
+    set(ConfigPackageLocation "lib/cmake/${PROJECT_NAME}")
 
     install(
             EXPORT "${target_name}Targets"
-            FILE "${CMAKE_PROJECT_NAME}${target_name}Targets.cmake"
-            NAMESPACE "${CMAKE_PROJECT_NAME}::"
-            DESTINATION "lib/cmake/${CMAKE_PROJECT_NAME}"
+            FILE "${PROJECT_NAME}${target_name}Targets.cmake"
+            NAMESPACE "${PROJECT_NAME}::"
+            DESTINATION "lib/cmake/${PROJECT_NAME}"
     )
 
     install(
             FILES
-            "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}${target_name}Config.cmake"
-            "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}${target_name}ConfigVersion.cmake"
-            DESTINATION "lib/cmake/${CMAKE_PROJECT_NAME}"
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}${target_name}Config.cmake"
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}${target_name}ConfigVersion.cmake"
+            DESTINATION "lib/cmake/${PROJECT_NAME}"
             COMPONENT Devel
     )
 endmacro()

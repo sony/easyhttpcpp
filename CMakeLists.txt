@@ -14,7 +14,8 @@ option(EASYHTTPCPP_VERBOSE_MESSAGES "Enable informational messages during config
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(PROJECT_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_MODULE_PATH})
 
 if (WIN32)
     if (NOT FORCE_SHAREDLIB)
@@ -52,12 +53,12 @@ if (FORCE_SHAREDLIB)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(LIB_MODE SHARED)
     if (EASYHTTPCPP_VERBOSE_MESSAGES)
-        message(STATUS "Building shared ${CMAKE_PROJECT_NAME} libraries")
+        message(STATUS "Building shared ${PROJECT_NAME} libraries")
     endif ()
 else ()
     set(LIB_MODE STATIC)
     if (EASYHTTPCPP_VERBOSE_MESSAGES)
-        message(STATUS "Building static ${CMAKE_PROJECT_NAME} libraries")
+        message(STATUS "Building static ${PROJECT_NAME} libraries")
     endif ()
 endif ()
 
@@ -170,19 +171,19 @@ endif ()
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY AnyNewerVersion
 )
 
 configure_file(cmake/DefineProjectConfig.cmake.in
-               "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}Config.cmake" @ONLY)
+               "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake" @ONLY)
 install(
         FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}Config.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake
         DESTINATION
-        "lib/cmake/${CMAKE_PROJECT_NAME}"
+        "lib/cmake/${PROJECT_NAME}"
         COMPONENT
         Devel
 )

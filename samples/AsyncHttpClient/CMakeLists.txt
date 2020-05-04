@@ -1,4 +1,4 @@
-set(SAMPLE_NAME "${CMAKE_PROJECT_NAME}-AsyncHttpClient")
+set(SAMPLE_NAME "${PROJECT_NAME}-AsyncHttpClient")
 
 set(SAMPLE_SRCS "AsyncHttpClient.cpp")
 
