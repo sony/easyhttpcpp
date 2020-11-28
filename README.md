@@ -16,7 +16,7 @@ Modern network applications need a powerful HTTP client. While we already have m
 [Poco::Net](https://pocoproject.org/docs/Poco.Net.html), 
 [Boost.Asio](http://www.boost.org/doc/libs/1_65_1/doc/html/boost_asio.html), 
 [cpprestsdk](https://github.com/Microsoft/cpprestsdk) to name a few, they often lack features like a powerful 
-response cache, HTTP connection pooling, debuggability etc which we all take it for granted for libraries targeted 
+response cache, HTTP connection pooling, debuggability etc which we all take for granted for libraries targeted 
 towards Android or iOS platforms. EasyHttp tries to fill that gap. 
 
 Features
